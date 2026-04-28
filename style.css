@@ -1,22 +1,51 @@
 body {
   margin: 0;
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   text-align: center;
-  background: #000;
+  background: url("background.png") center/cover no-repeat fixed;
   color: white;
+  min-height: 100vh;
 }
 
 canvas {
   display: none;
-  background: #111;
+  background: transparent;
 }
 
 #menu, #gameOver {
+  min-height: 100vh;
   padding: 20px;
+  background: rgba(0, 0, 20, 0.45);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(2px);
+}
+
+h1 {
+  font-size: 54px;
+  text-shadow: 0 0 20px #8b5cff;
 }
 
 button {
-  padding: 10px 20px;
-  margin: 10px;
+  padding: 16px 34px;
+  margin: 12px;
   cursor: pointer;
+  border: 2px solid #9b5cff;
+  border-radius: 14px;
+  background: rgba(20, 10, 60, 0.85);
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  box-shadow: 0 0 20px #7c3cff;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+p {
+  font-size: 20px;
+  text-shadow: 0 0 10px black;
 }
