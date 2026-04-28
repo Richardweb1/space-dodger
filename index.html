@@ -2,42 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Space Dodger</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="gameWrapper">
-    <canvas id="gameCanvas"></canvas>
 
-    <div id="menu" class="screen">
-      <h1>🚀 Space Dodger</h1>
-      <p>Dodge asteroids, survive, and submit your score on Base Sepolia testnet.</p>
+<div id="menu">
+  <h1>🚀 Space Dodger</h1>
 
-      <button id="connectWallet">Connect Wallet</button>
-      <p id="walletAddress">Wallet not connected</p>
+  <button onclick="connectWallet()">Connect Wallet</button>
+  <p id="wallet">Not connected</p>
 
-      <button id="startBtn">Start Game</button>
-    </div>
+  <button onclick="startGame()">Start Game</button>
+</div>
 
-    <div id="gameOver" class="screen hidden">
-      <h1>Game Over</h1>
-      <p>Score: <span id="finalScore">0</span></p>
-      <p>High Score: <span id="highScore">0</span></p>
+<canvas id="game"></canvas>
 
-      <button id="submitScoreBtn">Submit Score On-Chain</button>
-      <p id="txStatus"></p>
+<div id="gameOver" style="display:none;">
+  <h2>Game Over</h2>
+  <p id="finalScore"></p>
 
-      <button id="restartBtn">Restart</button>
-    </div>
+  <button onclick="submitScore()">Submit Score (GenLayer)</button>
+  <p id="tx"></p>
 
-    <div id="hud">
-      <span>Score: <b id="score">0</b></span>
-      <button id="pauseBtn">Pause</button>
-    </div>
-  </div>
+  <button onclick="location.reload()">Restart</button>
+</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
-  <script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
+<script src="script.js"></script>
+
 </body>
 </html>
