@@ -10,16 +10,10 @@ let startTime;
 let walletAddress = null;
 let isConnected = false;
 
-const GENLAYER_TESTNET = {
+const GENLAYER = {
   chainId: "0x107d",
-  chainName: "GenLayer Testnet Bradbury",
   rpcUrls: ["https://rpc-bradbury.genlayer.com"],
-  nativeCurrency: {
-    name: "GEN",
-    symbol: "GEN",
-    decimals: 18
-  },
-  blockExplorerUrls: ["https://explorer-bradbury.genlayer.com"]
+  blockExplorer: "https://explorer-bradbury.genlayer.com"
 };
 
 const player = { x: 0, y: 0, width: 50, height: 60, speed: 6 };
@@ -28,44 +22,42 @@ const keys = {};
 
 async function connectWallet() {
   if (!window.ethereum) {
-    alert("Install MetaMask first.");
+    alert("Install MetaMask");
     return;
   }
 
   try {
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts"
-    });
-
+    const accounts = await ethereum.request({ method: "eth_requestAccounts" });
     walletAddress = accounts[0];
 
     try {
-      await window.ethereum.request({
+      await ethereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: GENLAYER_TESTNET.chainId }]
+        params: [{ chainId: GENLAYER.chainId }]
       });
-    } catch (err) {
-      if (err.code === 4902) {
-        await window.ethereum.request({
-          method: "wallet_addEthereumChain",
-          params: [GENLAYER_TESTNET]
-        });
-      } else {
-        throw err;
-      }
+    } catch {
+      await ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [{
+          chainId: GENLAYER.chainId,
+          chainName: "GenLayer Testnet",
+          rpcUrls: GENLAYER.rpcUrls,
+          nativeCurrency: { name: "GEN", symbol: "GEN", decimals: 18 }
+        }]
+      });
     }
 
     isConnected = true;
-    alert("Wallet connected to GenLayer testnet.");
-  } catch (err) {
-    console.error(err);
-    alert("Wallet connection failed.");
+    alert("Wallet connected ✅");
+
+  } catch {
+    alert("Connection failed");
   }
 }
 
 function startGame() {
   if (!isConnected) {
-    alert("Connect wallet first.");
+    alert("Connect wallet first");
     return;
   }
 
@@ -81,7 +73,6 @@ function startGame() {
   startTime = Date.now();
 
   menu.style.display = "none";
-  gameOver.style.display = "none";
   canvas.style.display = "block";
   gameRunning = true;
 
@@ -90,7 +81,7 @@ function startGame() {
 
 function drawPlayer() {
   ctx.fillStyle = "cyan";
-  ctx.shadowBlur = 20;
+  ctx.shadowBlur = 15;
   ctx.shadowColor = "cyan";
 
   ctx.beginPath();
@@ -114,20 +105,16 @@ function createObstacle() {
 
 function drawObstacle(o) {
   ctx.fillStyle = "#8b5cff";
-  ctx.shadowBlur = 12;
-  ctx.shadowColor = "#8b5cff";
   ctx.beginPath();
   ctx.arc(o.x, o.y, o.width / 2, 0, Math.PI * 2);
   ctx.fill();
 }
 
 function checkCollision(a, b) {
-  return (
-    a.x < b.x + b.width &&
-    a.x + a.width > b.x &&
-    a.y < b.y + b.height &&
-    a.y + a.height > b.y
-  );
+  return a.x < b.x + b.width &&
+         a.x + a.width > b.x &&
+         a.y < b.y + b.height &&
+         a.y + a.height > b.y;
 }
 
 function gameLoop() {
@@ -136,13 +123,8 @@ function gameLoop() {
   ctx.fillStyle = "#050816";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  if (keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
-  if (keys["ArrowDown"] || keys["s"]) player.y += player.speed;
-  if (keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
-  if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
-
-  player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
-  player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+  if (keys["ArrowUp"]) player.y -= player.speed;
+  if (keys["ArrowDown"]) player.y += player.speed;
 
   drawPlayer();
 
@@ -154,7 +136,7 @@ function gameLoop() {
 
     if (checkCollision(player, o)) endGame();
 
-    if (o.x + o.width < 0) {
+    if (o.x < 0) {
       obstacles.splice(i, 1);
       score += 10;
     }
@@ -163,9 +145,7 @@ function gameLoop() {
   gameTime = Math.floor((Date.now() - startTime) / 1000);
 
   ctx.fillStyle = "white";
-  ctx.font = "bold 24px Arial";
   ctx.fillText("Score: " + score, 20, 40);
-  ctx.fillText("Time: " + gameTime + "s", 20, 70);
 
   requestAnimationFrame(gameLoop);
 }
@@ -176,45 +156,39 @@ async function endGame() {
   gameOver.style.display = "flex";
 
   document.getElementById("finalScore").textContent = "Score: " + score;
-  document.getElementById("finalTime").textContent = "Time: " + gameTime + "s";
+  document.getElementById("finalTime").textContent = "Time: " + gameTime;
 
-  await submitScoreTransaction();
+  await sendScore();
 }
 
-async function submitScoreTransaction() {
+async function sendScore() {
   try {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
 
-    const message = `Space Dodger | Score: ${score} | Time: ${gameTime}s`;
+    const msg = `Score:${score},Time:${gameTime}`;
 
     const tx = await signer.sendTransaction({
       to: walletAddress,
       value: 0,
-      data: ethers.utils.hexlify(ethers.utils.toUtf8Bytes(message))
+      data: ethers.utils.hexlify(ethers.utils.toUtf8Bytes(msg))
     });
 
     document.getElementById("tx").innerHTML =
-      `Sign complete!<br>
-      TX: ${tx.hash}<br>
-      <a href="${GENLAYER_TESTNET.blockExplorerUrls[0]}/tx/${tx.hash}" target="_blank">
-        View on GenLayer Explorer
-      </a>`;
-  } catch (err) {
-    console.error(err);
-    document.getElementById("tx").textContent =
-      "Transaction cancelled or failed. Make sure you have GEN testnet tokens.";
+      `<a href="${GENLAYER.blockExplorer}/tx/${tx.hash}" target="_blank">View TX</a>`;
+  } catch {
+    document.getElementById("tx").textContent = "Transaction cancelled";
   }
 }
 
 window.addEventListener("keydown", e => keys[e.key] = true);
 window.addEventListener("keyup", e => keys[e.key] = false);
 
-document.getElementById("connectBtn").addEventListener("click", connectWallet);
-document.getElementById("startBtn").addEventListener("click", startGame);
-document.getElementById("retryBtn").addEventListener("click", startGame);
+document.getElementById("connectBtn").onclick = connectWallet;
+document.getElementById("startBtn").onclick = startGame;
+document.getElementById("retryBtn").onclick = startGame;
 
-document.getElementById("menuBtn").addEventListener("click", () => {
+document.getElementById("menuBtn").onclick = () => {
   gameOver.style.display = "none";
   menu.style.display = "block";
-});
+};
