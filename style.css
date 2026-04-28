@@ -1,204 +1,86 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-
-const menu = document.getElementById("menu");
-const gameOver = document.getElementById("gameOver");
-
-const connectBtn = document.getElementById("connectBtn");
-const startBtn = document.getElementById("startBtn");
-const retryBtn = document.getElementById("retryBtn");
-const menuBtn = document.getElementById("menuBtn");
-const submitTxBtn = document.getElementById("submitTxBtn");
-
-const walletText = document.getElementById("walletText");
-const finalScoreText = document.getElementById("finalScore");
-const finalTimeText = document.getElementById("finalTime");
-const txStatus = document.getElementById("txStatus");
-
-let walletAddress = null;
-let isConnected = false;
-
-let width = window.innerWidth;
-let height = window.innerHeight;
-
-canvas.width = width;
-canvas.height = height;
-
-let player = { x: width / 2, y: height - 120, size: 30, speed: 8 };
-let obstacles = [];
-let score = 0;
-let gameTime = 0;
-let startTime = 0;
-let running = false;
-
-const keys = {};
-
-const GENLAYER = {
-  chainId: "0x107d",
-  rpc: "https://rpc.testnet-chain.genlayer.com",
-  explorer: "https://explorer.testnet-chain.genlayer.com"
-};
-
-async function connectWallet() {
-  if (!window.ethereum) return alert("Install MetaMask");
-
-  const accounts = await ethereum.request({ method: "eth_requestAccounts" });
-  walletAddress = accounts[0];
-
-  try {
-    await ethereum.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: GENLAYER.chainId }]
-    });
-  } catch {
-    await ethereum.request({
-      method: "wallet_addEthereumChain",
-      params: [{
-        chainId: GENLAYER.chainId,
-        chainName: "GenLayer",
-        rpcUrls: [GENLAYER.rpc],
-        nativeCurrency: { name: "GEN", symbol: "GEN", decimals: 18 }
-      }]
-    });
-  }
-
-  isConnected = true;
-  walletText.textContent = "Connected";
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-function startGame() {
-  if (!isConnected) return alert("Connect wallet");
-
-  player.x = width / 2;
-  obstacles = [];
-  score = 0;
-  startTime = Date.now();
-  running = true;
-
-  menu.classList.add("hidden");
-  canvas.style.display = "block";
-  gameOver.classList.add("hidden");
-
-  gameLoop();
+body {
+  background: radial-gradient(circle at top, #1b244a, #050816);
+  font-family: Arial, sans-serif;
+  color: white;
+  overflow: hidden;
 }
 
-function drawRoad() {
-  ctx.fillStyle = "#050816";
-  ctx.fillRect(0, 0, width, height);
-
-  ctx.strokeStyle = "white";
-  ctx.setLineDash([20, 20]);
-  ctx.lineDashOffset -= 5;
-
-  ctx.beginPath();
-  ctx.moveTo(width / 2, 0);
-  ctx.lineTo(width / 2, height);
-  ctx.stroke();
+.screen {
+  width: min(520px, 92vw);
+  min-height: 100vh;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  position: relative;
 }
 
-function drawPlayer() {
-  ctx.fillStyle = "cyan";
-  ctx.beginPath();
-  ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
-  ctx.fill();
+.screen::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  min-height: 430px;
+  background: rgba(5, 8, 35, 0.78);
+  border-radius: 28px;
+  box-shadow: 0 0 45px rgba(124, 60, 255, 0.55);
+  border: 1px solid rgba(124, 60, 255, 0.5);
+  z-index: -1;
 }
 
-function spawnObstacle() {
-  obstacles.push({
-    x: Math.random() * width,
-    y: -40,
-    size: 30,
-    speed: 4
-  });
+h1 {
+  font-size: 52px;
+  text-shadow: 0 0 25px #7c3cff;
 }
 
-function drawObstacles() {
-  obstacles.forEach(o => {
-    o.y += o.speed;
-
-    ctx.fillStyle = "purple";
-    ctx.beginPath();
-    ctx.arc(o.x, o.y, o.size, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (Math.hypot(player.x - o.x, player.y - o.y) < player.size + o.size) {
-      endGame();
-    }
-  });
+h2 {
+  font-size: 48px;
+  text-shadow: 0 0 25px #00d9ff;
 }
 
-function updatePlayer() {
-  if (keys["ArrowLeft"]) player.x -= player.speed;
-  if (keys["ArrowRight"]) player.x += player.speed;
-
-  player.x = Math.max(30, Math.min(width - 30, player.x));
+p {
+  font-size: 18px;
+  max-width: 430px;
 }
 
-function gameLoop() {
-  if (!running) return;
-
-  drawRoad();
-  updatePlayer();
-  drawPlayer();
-
-  if (score > 50 && Math.random() < 0.02) spawnObstacle();
-
-  drawObstacles();
-
-  score++;
-  gameTime = Math.floor((Date.now() - startTime) / 1000);
-
-  ctx.fillStyle = "white";
-  ctx.fillText("Score: " + score, 20, 40);
-
-  requestAnimationFrame(gameLoop);
+button {
+  padding: 15px 34px;
+  border: none;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #7c3cff, #00d9ff);
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 0 25px rgba(124, 60, 255, 0.7);
 }
 
-function endGame() {
-  running = false;
-  canvas.style.display = "none";
-
-  finalScoreText.textContent = score;
-  finalTimeText.textContent = gameTime;
-
-  gameOver.classList.remove("hidden");
-  txStatus.textContent = "Click button to sign transaction";
+button:hover {
+  transform: scale(1.05);
 }
 
-async function submitTx() {
-  if (!walletAddress) return alert("Connect wallet");
-
-  try {
-    txStatus.textContent = "Waiting for signature...";
-
-    const txHash = await ethereum.request({
-      method: "eth_sendTransaction",
-      params: [{
-        from: walletAddress,
-        to: walletAddress,
-        value: "0x0",
-        data: "0x" + Array.from(new TextEncoder().encode(`Score:${score}`))
-          .map(b => b.toString(16).padStart(2, "0"))
-          .join("")
-      }]
-    });
-
-    txStatus.innerHTML =
-      `TX sent <br><a href="${GENLAYER.explorer}/tx/${txHash}" target="_blank">View</a>`;
-  } catch {
-    txStatus.textContent = "Transaction failed";
-  }
+#walletText,
+#txStatus {
+  color: #bdf6ff;
+  font-size: 14px;
+  word-break: break-word;
 }
 
-window.addEventListener("keydown", e => keys[e.key] = true);
-window.addEventListener("keyup", e => keys[e.key] = false);
+canvas {
+  display: none;
+  width: 100vw;
+  height: 100vh;
+  background: #050816;
+}
 
-connectBtn.onclick = connectWallet;
-startBtn.onclick = startGame;
-retryBtn.onclick = startGame;
-menuBtn.onclick = () => {
-  gameOver.classList.add("hidden");
-  menu.classList.remove("hidden");
-};
-
-submitTxBtn.onclick = submitTx;
+.hidden {
+  display: none !important;
+}
