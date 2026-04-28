@@ -1,4 +1,3 @@
-// Game variables
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const menu = document.getElementById("menu");
@@ -8,30 +7,73 @@ let gameRunning = false;
 let score = 0;
 let gameTime = 0;
 let startTime;
+let walletAddress = null;
 let isConnected = false;
 
-const player = {
-  x: 0,
-  y: 0,
-  width: 50,
-  height: 60,
-  speed: 6
+const GENLAYER_TESTNET = {
+  chainId: "0x107d",
+  chainName: "GenLayer Testnet Bradbury",
+  rpcUrls: ["https://rpc-bradbury.genlayer.com"],
+  nativeCurrency: {
+    name: "GEN",
+    symbol: "GEN",
+    decimals: 18
+  },
+  blockExplorerUrls: ["https://explorer-bradbury.genlayer.com"]
 };
 
+const player = { x: 0, y: 0, width: 50, height: 60, speed: 6 };
 let obstacles = [];
 const keys = {};
 
-function connectWallet() {
-  isConnected = true;
-  alert("Demo mode: GenLayer testnet connection ready.");
+async function connectWallet() {
+  if (!window.ethereum) {
+    alert("Install MetaMask first.");
+    return;
+  }
+
+  try {
+    const accounts = await window.ethereum.request({
+      method: "eth_requestAccounts"
+    });
+
+    walletAddress = accounts[0];
+
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: GENLAYER_TESTNET.chainId }]
+      });
+    } catch (err) {
+      if (err.code === 4902) {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [GENLAYER_TESTNET]
+        });
+      } else {
+        throw err;
+      }
+    }
+
+    isConnected = true;
+    alert("Wallet connected to GenLayer testnet.");
+  } catch (err) {
+    console.error(err);
+    alert("Wallet connection failed.");
+  }
 }
 
 function startGame() {
+  if (!isConnected) {
+    alert("Connect wallet first.");
+    return;
+  }
+
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
   player.x = 100;
-  player.y = canvas.height / 2 - player.height / 2;
+  player.y = canvas.height / 2;
 
   score = 0;
   gameTime = 0;
@@ -41,53 +83,42 @@ function startGame() {
   menu.style.display = "none";
   gameOver.style.display = "none";
   canvas.style.display = "block";
-
   gameRunning = true;
+
   gameLoop();
 }
 
 function drawPlayer() {
-  ctx.save();
-  ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.shadowBlur = 18;
-  ctx.shadowColor = "#00d9ff";
+  ctx.fillStyle = "cyan";
+  ctx.shadowBlur = 20;
+  ctx.shadowColor = "cyan";
 
   ctx.beginPath();
-  ctx.moveTo(0, -28);
-  ctx.lineTo(-20, 26);
-  ctx.lineTo(-7, 14);
-  ctx.lineTo(0, -8);
-  ctx.lineTo(7, 14);
-  ctx.lineTo(20, 26);
+  ctx.moveTo(player.x + 25, player.y);
+  ctx.lineTo(player.x, player.y + 60);
+  ctx.lineTo(player.x + 50, player.y + 60);
   ctx.closePath();
   ctx.fill();
-
-  ctx.restore();
 }
 
 function createObstacle() {
   const size = 30 + Math.random() * 40;
-
   obstacles.push({
     x: canvas.width,
     y: Math.random() * (canvas.height - size),
     width: size,
     height: size,
-    speed: 3 + Math.random() * 2
+    speed: 4
   });
 }
 
-function drawObstacle(obs) {
-  ctx.save();
+function drawObstacle(o) {
   ctx.fillStyle = "#8b5cff";
-  ctx.shadowBlur = 10;
+  ctx.shadowBlur = 12;
   ctx.shadowColor = "#8b5cff";
   ctx.beginPath();
-  ctx.arc(obs.x, obs.y, obs.width / 2, 0, Math.PI * 2);
+  ctx.arc(o.x, o.y, o.width / 2, 0, Math.PI * 2);
   ctx.fill();
-  ctx.restore();
 }
 
 function checkCollision(a, b) {
@@ -117,14 +148,14 @@ function gameLoop() {
 
   if (Math.random() < 0.02) createObstacle();
 
-  obstacles.forEach((obs, index) => {
-    obs.x -= obs.speed;
-    drawObstacle(obs);
+  obstacles.forEach((o, i) => {
+    o.x -= o.speed;
+    drawObstacle(o);
 
-    if (checkCollision(player, obs)) endGame();
+    if (checkCollision(player, o)) endGame();
 
-    if (obs.x + obs.width < 0) {
-      obstacles.splice(index, 1);
+    if (o.x + o.width < 0) {
+      obstacles.splice(i, 1);
       score += 10;
     }
   });
@@ -139,24 +170,45 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-function endGame() {
+async function endGame() {
   gameRunning = false;
   canvas.style.display = "none";
   gameOver.style.display = "flex";
 
   document.getElementById("finalScore").textContent = "Score: " + score;
   document.getElementById("finalTime").textContent = "Time: " + gameTime + "s";
-  document.getElementById("tx").textContent =
-    "GenLayer demo: score ready for future AI validation.";
+
+  await submitScoreTransaction();
 }
 
-window.addEventListener("keydown", e => {
-  keys[e.key] = true;
-});
+async function submitScoreTransaction() {
+  try {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
 
-window.addEventListener("keyup", e => {
-  keys[e.key] = false;
-});
+    const message = `Space Dodger | Score: ${score} | Time: ${gameTime}s`;
+
+    const tx = await signer.sendTransaction({
+      to: walletAddress,
+      value: 0,
+      data: ethers.utils.hexlify(ethers.utils.toUtf8Bytes(message))
+    });
+
+    document.getElementById("tx").innerHTML =
+      `Sign complete!<br>
+      TX: ${tx.hash}<br>
+      <a href="${GENLAYER_TESTNET.blockExplorerUrls[0]}/tx/${tx.hash}" target="_blank">
+        View on GenLayer Explorer
+      </a>`;
+  } catch (err) {
+    console.error(err);
+    document.getElementById("tx").textContent =
+      "Transaction cancelled or failed. Make sure you have GEN testnet tokens.";
+  }
+}
+
+window.addEventListener("keydown", e => keys[e.key] = true);
+window.addEventListener("keyup", e => keys[e.key] = false);
 
 document.getElementById("connectBtn").addEventListener("click", connectWallet);
 document.getElementById("startBtn").addEventListener("click", startGame);
