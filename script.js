@@ -95,6 +95,7 @@ async function connectWallet() {
     isConnected = true;
     walletText.textContent =
       "Connected: " + walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4);
+
   } catch (err) {
     console.error(err);
     alert("Wallet connection failed.");
@@ -102,6 +103,11 @@ async function connectWallet() {
 }
 
 function startGame() {
+  if (!isConnected) {
+    alert("Connect wallet first.");
+    return;
+  }
+
   resizeCanvas();
 
   player.x = width / 2 - player.width / 2;
@@ -211,18 +217,16 @@ function drawObstacles() {
 }
 
 function updatePlayer() {
-  if (keys["ArrowLeft"] || keys["a"]) {
-    player.x -= player.speed;
-  }
-
-  if (keys["ArrowRight"] || keys["d"]) {
-    player.x += player.speed;
-  }
+  if (keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
+  if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
 
   const roadWidth = Math.min(520, width * 0.82);
   const roadX = width / 2 - roadWidth / 2;
 
-  player.x = Math.max(roadX, Math.min(roadX + roadWidth - player.width, player.x));
+  player.x = Math.max(
+    roadX,
+    Math.min(roadX + roadWidth - player.width, player.x)
+  );
 }
 
 function checkCollision() {
@@ -264,7 +268,7 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-function endGame() {
+async function endGame() {
   if (!gameRunning) return;
 
   gameRunning = false;
@@ -274,37 +278,49 @@ function endGame() {
   finalTimeText.textContent = gameTime;
 
   gameOver.classList.remove("hidden");
+
+  await submitScoreTransaction();
 }
 
 async function submitScoreTransaction() {
   if (!walletAddress) {
-    alert("Connect wallet first.");
+    txStatus.textContent = "Connect wallet first.";
     return;
   }
 
   try {
     txStatus.textContent = "Waiting for MetaMask signature...";
 
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: GENLAYER.chainId }]
+    });
 
-    const message =
-      `SpaceDodger|Wallet:${walletAddress}|Score:${score}|Time:${gameTime}|Network:GenLayer`;
+    const message = `SpaceDodger Score:${score} Time:${gameTime}`;
 
-    const tx = await signer.sendTransaction({
-      to: walletAddress,
-      value: ethers.utils.parseEther("0"),
-      data: ethers.utils.hexlify(ethers.utils.toUtf8Bytes(message))
+    const data = "0x" + Array.from(new TextEncoder().encode(message))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    const txHash = await window.ethereum.request({
+      method: "eth_sendTransaction",
+      params: [{
+        from: walletAddress,
+        to: walletAddress,
+        value: "0x0",
+        data: data
+      }]
     });
 
     txStatus.innerHTML =
       `Transaction sent ✅<br>
-      <a href="${GENLAYER.explorer}/tx/${tx.hash}" target="_blank">
+      <a href="${GENLAYER.explorer}/tx/${txHash}" target="_blank">
         View TX on GenLayer Explorer
       </a>`;
   } catch (err) {
     console.error(err);
-    txStatus.textContent = "Transaction cancelled or failed.";
+    txStatus.textContent =
+      "Transaction failed or rejected. Make sure you have GEN testnet gas.";
   }
 }
 
