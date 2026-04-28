@@ -17,9 +17,9 @@ const txStatus = document.getElementById("txStatus");
 
 const GENLAYER = {
   chainId: "0x107d",
-  chainName: "GenLayer Testnet Bradbury",
-  rpcUrls: ["https://rpc-bradbury.genlayer.com"],
-  explorer: "https://explorer-bradbury.genlayer.com",
+  chainName: "GenLayer Testnet Chain",
+  rpcUrls: ["https://rpc.testnet-chain.genlayer.com"],
+  explorer: "https://explorer.testnet-chain.genlayer.com",
   nativeCurrency: {
     name: "GEN",
     symbol: "GEN",
@@ -94,6 +94,8 @@ async function connectWallet() {
     isConnected = true;
     walletText.textContent =
       "Connected: " + walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4);
+
+    alert("Connected to GenLayer Testnet Chain ✅");
   } catch (err) {
     console.error(err);
     alert("Wallet connection failed.");
@@ -259,7 +261,6 @@ function gameLoop() {
   updatePlayer();
   drawPlayer();
 
-  /* Safe start: asteroids appear after score 120 */
   if (score > 120 && Math.random() < 0.015) {
     spawnAsteroid();
   }
@@ -303,7 +304,7 @@ async function submitScoreTransaction() {
     const signer = provider.getSigner();
 
     const message =
-      `SpaceDodger|Wallet:${walletAddress}|Score:${score}|Time:${gameTime}|Network:GenLayerTestnet`;
+      `SpaceDodger|Wallet:${walletAddress}|Score:${score}|Time:${gameTime}|Network:GenLayerTestnetChain`;
 
     const tx = await signer.sendTransaction({
       to: walletAddress,
@@ -330,7 +331,6 @@ window.addEventListener("keyup", e => {
   keys[e.key] = false;
 });
 
-/* Touch movement */
 canvas.addEventListener("touchmove", e => {
   e.preventDefault();
 
@@ -341,7 +341,6 @@ canvas.addEventListener("touchmove", e => {
   player.y = touch.clientY;
 }, { passive: false });
 
-/* Mouse movement */
 canvas.addEventListener("mousemove", e => {
   if (!gameRunning) return;
 
