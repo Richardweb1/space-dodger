@@ -16,14 +16,20 @@ const GENLAYER = {
   explorer: "https://explorer-bradbury.genlayer.com"
 };
 
-const player = { x: 0, y: 0, width: 50, height: 60, speed: 6 };
+const player = {
+  x: 100,
+  y: 300,
+  width: 50,
+  height: 60,
+  speed: 7
+};
+
 let obstacles = [];
 const keys = {};
 
-// ✅ CONNECT WALLET
 async function connectWallet() {
   if (!window.ethereum) {
-    alert("Install MetaMask");
+    alert("Install MetaMask first");
     return;
   }
 
@@ -43,20 +49,22 @@ async function connectWallet() {
           chainId: GENLAYER.chainId,
           chainName: "GenLayer Testnet",
           rpcUrls: GENLAYER.rpcUrls,
-          nativeCurrency: { name: "GEN", symbol: "GEN", decimals: 18 }
+          nativeCurrency: {
+            name: "GEN",
+            symbol: "GEN",
+            decimals: 18
+          }
         }]
       });
     }
 
     isConnected = true;
-    alert("Connected to GenLayer ✅");
-
-  } catch {
-    alert("Connection failed");
+    alert("Connected to GenLayer Testnet");
+  } catch (error) {
+    alert("Wallet connection failed");
   }
 }
 
-// 🎮 START GAME
 function startGame() {
   if (!isConnected) {
     alert("Connect wallet first");
@@ -75,16 +83,17 @@ function startGame() {
   startTime = Date.now();
 
   menu.style.display = "none";
+  gameOver.style.display = "none";
   canvas.style.display = "block";
-  gameRunning = true;
 
+  gameRunning = true;
   gameLoop();
 }
 
-// 🚀 PLAYER
 function drawPlayer() {
+  ctx.save();
   ctx.fillStyle = "cyan";
-  ctx.shadowBlur = 15;
+  ctx.shadowBlur = 20;
   ctx.shadowColor = "cyan";
 
   ctx.beginPath();
@@ -93,29 +102,35 @@ function drawPlayer() {
   ctx.lineTo(player.x + 50, player.y + 60);
   ctx.closePath();
   ctx.fill();
+
+  ctx.restore();
 }
 
-// ☄️ OBSTACLES
 function createObstacle() {
-  const size = 30 + Math.random() * 40;
+  const size = 30 + Math.random() * 45;
 
   obstacles.push({
-    x: canvas.width,
-    y: Math.random() * canvas.height,
+    x: canvas.width + size,
+    y: Math.random() * (canvas.height - size),
     width: size,
     height: size,
-    speed: 4
+    speed: 4 + Math.random() * 2
   });
 }
 
 function drawObstacle(o) {
+  ctx.save();
   ctx.fillStyle = "#8b5cff";
+  ctx.shadowBlur = 12;
+  ctx.shadowColor = "#8b5cff";
+
   ctx.beginPath();
   ctx.arc(o.x, o.y, o.width / 2, 0, Math.PI * 2);
   ctx.fill();
+
+  ctx.restore();
 }
 
-// 💥 COLLISION
 function checkCollision(a, b) {
   return (
     a.x < b.x + b.width &&
@@ -125,27 +140,36 @@ function checkCollision(a, b) {
   );
 }
 
-// 🔁 GAME LOOP
 function gameLoop() {
   if (!gameRunning) return;
 
   ctx.fillStyle = "#050816";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  if (keys["ArrowUp"]) player.y -= player.speed;
-  if (keys["ArrowDown"]) player.y += player.speed;
+  if (keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
+  if (keys["ArrowDown"] || keys["s"]) player.y += player.speed;
+  if (keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
+  if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+
+  player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+  player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
 
   drawPlayer();
 
-  if (Math.random() < 0.02) createObstacle();
+  if (Math.random() < 0.025) {
+    createObstacle();
+  }
 
   obstacles.forEach((o, i) => {
     o.x -= o.speed;
     drawObstacle(o);
 
-    if (checkCollision(player, o)) endGame();
+    if (checkCollision(player, o)) {
+      endGame();
+      return;
+    }
 
-    if (o.x < 0) {
+    if (o.x + o.width < 0) {
       obstacles.splice(i, 1);
       score += 10;
     }
@@ -154,31 +178,33 @@ function gameLoop() {
   gameTime = Math.floor((Date.now() - startTime) / 1000);
 
   ctx.fillStyle = "white";
+  ctx.font = "bold 24px Arial";
   ctx.fillText("Score: " + score, 20, 40);
+  ctx.fillText("Time: " + gameTime + "s", 20, 70);
 
   requestAnimationFrame(gameLoop);
 }
 
-// 🛑 END GAME
 async function endGame() {
+  if (!gameRunning) return;
+
   gameRunning = false;
   canvas.style.display = "none";
   gameOver.style.display = "flex";
 
   document.getElementById("finalScore").textContent = "Score: " + score;
-  document.getElementById("finalTime").textContent = "Time: " + gameTime;
+  document.getElementById("finalTime").textContent = "Time: " + gameTime + "s";
 
   await sendScore();
 }
 
-// 🔗 SEND TESTNET TX
 async function sendScore() {
   try {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
 
     const data = ethers.utils.hexlify(
-      ethers.utils.toUtf8Bytes(`Score:${score},Time:${gameTime}`)
+      ethers.utils.toUtf8Bytes(`SpaceDodger Score:${score} Time:${gameTime}`)
     );
 
     const tx = await signer.sendTransaction({
@@ -188,21 +214,41 @@ async function sendScore() {
     });
 
     document.getElementById("tx").innerHTML =
-      `<a href="${GENLAYER.explorer}/tx/${tx.hash}" target="_blank">View TX</a>`;
-
+      `<a href="${GENLAYER.explorer}/tx/${tx.hash}" target="_blank">View TX on GenLayer Explorer</a>`;
   } catch {
-    document.getElementById("tx").textContent = "Transaction cancelled";
+    document.getElementById("tx").textContent =
+      "Transaction cancelled or failed";
   }
 }
 
-// 🎮 CONTROLS
-window.addEventListener("keydown", e => keys[e.key] = true);
-window.addEventListener("keyup", e => keys[e.key] = false);
+window.addEventListener("keydown", e => {
+  keys[e.key] = true;
+});
 
-// 🎯 BUTTONS
+window.addEventListener("keyup", e => {
+  keys[e.key] = false;
+});
+
+/* Touch movement for mobile */
+canvas.addEventListener("touchmove", e => {
+  e.preventDefault();
+
+  const touch = e.touches[0];
+  player.x = touch.clientX - player.width / 2;
+  player.y = touch.clientY - player.height / 2;
+}, { passive: false });
+
+canvas.addEventListener("mousemove", e => {
+  if (!gameRunning) return;
+
+  player.x = e.clientX - player.width / 2;
+  player.y = e.clientY - player.height / 2;
+});
+
 document.getElementById("connectBtn").onclick = connectWallet;
 document.getElementById("startBtn").onclick = startGame;
 document.getElementById("retryBtn").onclick = startGame;
+
 document.getElementById("menuBtn").onclick = () => {
   gameOver.style.display = "none";
   menu.style.display = "block";
