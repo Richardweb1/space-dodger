@@ -1,116 +1,159 @@
 * {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 body {
-  background: #050816;
-  overflow: hidden;
+  min-height: 100vh;
   font-family: Arial, sans-serif;
+  color: #123;
+  background:
+    radial-gradient(circle at top left, #dff8ff, transparent 35%),
+    linear-gradient(135deg, #eaf9ff, #ffffff);
+  overflow-x: hidden;
 }
 
-#menu {
-  width: 100vw;
-  height: 100vh;
-  position: relative;
-  background: url("background.png") center center / cover no-repeat;
+.app {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
 }
 
-/* Cover the "Not connected" text inside the background image */
-#menu::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 60.5%;
-  transform: translateX(-50%);
-  width: 520px;
-  height: 95px;
-  background: rgba(5, 8, 22, 0.98);
-  border-radius: 18px;
-  z-index: 2;
-}
-
-/* invisible clickable areas */
-#connectBtn,
-#startBtn {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 520px;
-  height: 90px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  z-index: 10;
-}
-
-#connectBtn {
-  top: 48.5%;
-}
-
-#startBtn {
-  top: 73.5%;
-}
-
-canvas {
-  display: none;
-  background: #050816;
-}
-
-#gameOver {
-  width: 100vw;
-  height: 100vh;
-  background: radial-gradient(circle at top, #0a0f2c, #02030a);
-  color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-}
-
-#gameOver h2 {
-  font-size: 50px;
-  text-shadow: 0 0 20px #8b5cff;
-}
-
-#gameOver button {
-  padding: 14px 30px;
-  border-radius: 12px;
-  border: none;
-  background: linear-gradient(135deg, #7c3cff, #00d9ff);
-  color: white;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-#tx {
-  margin-top: 10px;
-  font-size: 14px;
+.panel {
+  width: min(480px, 94vw);
+  padding: 28px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 20px 60px rgba(0, 180, 255, 0.22);
   text-align: center;
-  max-width: 90%;
-  word-break: break-word;
+  border: 1px solid rgba(255,255,255,0.8);
 }
 
-@media (max-width: 768px) {
-  #connectBtn,
-  #startBtn {
-    width: 70vw;
-    height: 70px;
+h1 {
+  font-size: clamp(34px, 8vw, 56px);
+  color: #129bd8;
+  margin-bottom: 12px;
+  text-shadow: 0 0 22px rgba(70, 205, 255, 0.5);
+}
+
+h2 {
+  font-size: 36px;
+  color: #129bd8;
+  margin-bottom: 12px;
+}
+
+p {
+  margin: 12px 0;
+  line-height: 1.45;
+}
+
+input {
+  width: 100%;
+  padding: 14px 16px;
+  margin: 14px 0;
+  border-radius: 16px;
+  border: 1px solid #bdefff;
+  font-size: 16px;
+}
+
+button {
+  border: none;
+  border-radius: 18px;
+  padding: 14px 22px;
+  margin: 8px;
+  cursor: pointer;
+  font-weight: 800;
+  color: white;
+  background: linear-gradient(135deg, #5ecfff, #148dff);
+  box-shadow: 0 10px 26px rgba(20, 141, 255, 0.28);
+}
+
+button:hover {
+  transform: translateY(-2px);
+}
+
+.hidden {
+  display: none !important;
+}
+
+#game {
+  width: min(760px, 96vw);
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.topbar div {
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.72);
+  box-shadow: 0 10px 25px rgba(0, 180, 255, 0.12);
+  text-align: center;
+  font-size: 14px;
+}
+
+#board {
+  width: min(720px, 96vw);
+  height: min(720px, 96vw);
+  margin: auto;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 7px;
+  padding: 10px;
+  border-radius: 28px;
+  background: rgba(255,255,255,0.55);
+  box-shadow: inset 0 0 20px rgba(0, 180, 255, 0.25), 0 20px 60px rgba(0, 180, 255, 0.2);
+}
+
+.tile {
+  border-radius: 22%;
+  display: grid;
+  place-items: center;
+  font-size: clamp(24px, 6vw, 48px);
+  background: linear-gradient(145deg, rgba(255,255,255,.9), rgba(202,241,255,.85));
+  box-shadow: 0 8px 18px rgba(0, 120, 255, 0.16), inset 0 3px 8px rgba(255,255,255,0.8);
+  user-select: none;
+  transition: transform .18s ease, opacity .18s ease;
+}
+
+.tile.selected {
+  outline: 4px solid #25b9ff;
+  transform: scale(1.08);
+}
+
+.tile.blast {
+  opacity: 0;
+  transform: scale(1.35) rotate(12deg);
+}
+
+.controls {
+  text-align: center;
+  margin-top: 14px;
+}
+
+#txStatus {
+  word-break: break-word;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  #connectBtn {
-    top: 49%;
+  .topbar div {
+    font-size: 13px;
   }
 
-  #startBtn {
-    top: 73%;
-  }
-
-  #menu::after {
-    width: 70vw;
-    height: 80px;
-    top: 60.5%;
+  #board {
+    gap: 5px;
+    padding: 7px;
   }
 }
