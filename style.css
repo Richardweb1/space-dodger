@@ -43,6 +43,7 @@ canvas {
   color: transparent;
   cursor: pointer;
   z-index: 10;
+  font-size: 0; /* Added: Ensures button text is truly invisible */
 }
 
 /* Connect Wallet button position */
@@ -88,6 +89,7 @@ canvas {
   font-weight: bold;
   box-shadow: 0 0 25px rgba(124, 60, 255, 0.8);
   cursor: pointer;
+  transition: transform 0.2s ease; /* Added: Smooth hover animation */
 }
 
 #gameOver button:hover {
@@ -104,17 +106,30 @@ canvas {
   #menu {
     background-size: cover;
   }
-
+  
   #menu button {
     width: 70vw;
     height: 65px;
   }
-
+  
   #menu button:nth-of-type(1) {
     top: 56%;
   }
-
+  
   #menu button:nth-of-type(2) {
     top: 74%;
+  }
+  
+  #gameOver h2 {
+    font-size: 40px; /* Added: Smaller heading on mobile */
+  }
+  
+  #gameOver p {
+    font-size: 16px; /* Added: Smaller text on mobile */
+  }
+  
+  #gameOver button {
+    padding: 14px 28px; /* Added: Smaller buttons on mobile */
+    font-size: 16px;
   }
 }
