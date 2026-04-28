@@ -108,7 +108,7 @@ function createStars() {
       x: Math.random() * width,
       y: Math.random() * height,
       r: Math.random() * 2,
-      speed: 0.4 + Math.random() * 1.3
+      speed: 0.4 + Math.random() * 1.1
     });
   }
 }
@@ -185,13 +185,13 @@ function drawPlayer() {
 }
 
 function spawnAsteroid() {
-  const size = 24 + Math.random() * 48;
+  const size = 24 + Math.random() * 42;
 
   asteroids.push({
     x: width + size,
     y: Math.random() * (height - size * 2) + size,
     size,
-    speed: 3 + Math.random() * 3 + score / 400,
+    speed: 2 + Math.random() * 2 + score / 900,
     rotation: Math.random() * Math.PI * 2
   });
 }
@@ -212,7 +212,7 @@ function drawAsteroids() {
     ctx.beginPath();
     for (let i = 0; i < 9; i++) {
       const angle = (i / 9) * Math.PI * 2;
-      const radius = a.size * (0.72 + Math.random() * 0.25);
+      const radius = a.size * (0.75 + Math.random() * 0.18);
       const x = Math.cos(angle) * radius;
       const y = Math.sin(angle) * radius;
       if (i === 0) ctx.moveTo(x, y);
@@ -243,7 +243,7 @@ function checkCollision() {
     const dy = player.y - a.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist < player.size * 0.75 + a.size * 0.8) {
+    if (dist < player.size * 0.72 + a.size * 0.72) {
       endGame();
       return;
     }
@@ -259,7 +259,10 @@ function gameLoop() {
   updatePlayer();
   drawPlayer();
 
-  if (Math.random() < 0.025) spawnAsteroid();
+  /* Safe start: asteroids appear after score 120 */
+  if (score > 120 && Math.random() < 0.015) {
+    spawnAsteroid();
+  }
 
   drawAsteroids();
   checkCollision();
@@ -327,7 +330,7 @@ window.addEventListener("keyup", e => {
   keys[e.key] = false;
 });
 
-/* Touch + mouse movement */
+/* Touch movement */
 canvas.addEventListener("touchmove", e => {
   e.preventDefault();
 
@@ -338,6 +341,7 @@ canvas.addEventListener("touchmove", e => {
   player.y = touch.clientY;
 }, { passive: false });
 
+/* Mouse movement */
 canvas.addEventListener("mousemove", e => {
   if (!gameRunning) return;
 
