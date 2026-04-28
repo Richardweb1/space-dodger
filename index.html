@@ -3,49 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crystal Pop Quest - GenLayer</title>
+  <title>Space Dodger - GenLayer</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
 </head>
 <body>
-  <main class="app">
-    <section id="home" class="panel">
-      <h1>💎 Crystal Pop Quest</h1>
-      <p>Match 3+ tiles, clear levels, and submit your score on GenLayer Testnet.</p>
-      <input id="username" placeholder="Enter username" maxlength="18" />
-      <button id="connectWallet">Connect GenLayer Wallet</button>
-      <p id="walletText">Wallet not connected</p>
-      <button id="startGame">Start Game</button>
-    </section>
+  <div id="menu" class="screen">
+    <div class="logo">▲</div>
+    <h1>🚀 Space Dodger</h1>
+    <p>Dodge asteroids, get a score, then sign a GenLayer testnet transaction.</p>
 
-    <section id="game" class="hidden">
-      <header class="topbar">
-        <div>Player: <b id="playerName">Guest</b></div>
-        <div>Level: <b id="level">1</b></div>
-        <div>Score: <b id="score">0</b></div>
-        <div>Target: <b id="target">100</b></div>
-        <div>Moves: <b id="moves">20</b></div>
-      </header>
+    <button id="connectBtn">Connect Wallet</button>
+    <p id="walletText">Wallet not connected</p>
 
-      <div id="board"></div>
+    <button id="startBtn">Start Game</button>
+  </div>
 
-      <footer class="controls">
-        <button id="pauseBtn">Pause</button>
-        <button id="homeBtn">Home</button>
-      </footer>
-    </section>
+  <canvas id="gameCanvas"></canvas>
 
-    <section id="result" class="panel hidden">
-      <h2 id="resultTitle">Level Complete</h2>
-      <p id="resultText"></p>
-      <button id="submitTx">Submit Score on GenLayer</button>
-      <p id="txStatus"></p>
-      <button id="nextLevel">Next Level</button>
-      <button id="retryLevel">Retry</button>
-      <button id="backHome">Home</button>
-    </section>
-  </main>
+  <div id="gameOver" class="screen hidden">
+    <h2>Game Over</h2>
+    <p>Score: <span id="finalScore">0</span></p>
+    <p>Time: <span id="finalTime">0</span>s</p>
 
-  <script src="script.js?v=1000"></script>
+    <button id="submitTxBtn">Sign Score Transaction</button>
+    <p id="txStatus"></p>
+
+    <button id="retryBtn">Play Again</button>
+    <button id="menuBtn">Main Menu</button>
+  </div>
+
+  <script src="script.js?v=900"></script>
 </body>
 </html>
