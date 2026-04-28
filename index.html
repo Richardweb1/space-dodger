@@ -1,30 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Space Dodger - GenLayer</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crystal Pop Quest - GenLayer</title>
+  <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
 </head>
 <body>
+  <main class="app">
+    <section id="home" class="panel">
+      <h1>💎 Crystal Pop Quest</h1>
+      <p>Match 3+ tiles, clear levels, and submit your score on GenLayer Testnet.</p>
+      <input id="username" placeholder="Enter username" maxlength="18" />
+      <button id="connectWallet">Connect GenLayer Wallet</button>
+      <p id="walletText">Wallet not connected</p>
+      <button id="startGame">Start Game</button>
+    </section>
 
-  <div id="menu">
-    <button id="connectBtn"></button>
-    <button id="startBtn"></button>
-  </div>
+    <section id="game" class="hidden">
+      <header class="topbar">
+        <div>Player: <b id="playerName">Guest</b></div>
+        <div>Level: <b id="level">1</b></div>
+        <div>Score: <b id="score">0</b></div>
+        <div>Target: <b id="target">100</b></div>
+        <div>Moves: <b id="moves">20</b></div>
+      </header>
 
-  <canvas id="gameCanvas"></canvas>
+      <div id="board"></div>
 
-  <div id="gameOver" style="display:none;">
-    <h2>GAME OVER</h2>
-    <p id="finalScore">Score: 0</p>
-    <p id="finalTime">Time: 0s</p>
-    <button id="retryBtn">PLAY AGAIN</button>
-    <button id="menuBtn">MAIN MENU</button>
-    <p id="tx"></p>
-  </div>
+      <footer class="controls">
+        <button id="pauseBtn">Pause</button>
+        <button id="homeBtn">Home</button>
+      </footer>
+    </section>
 
-  <script src="script.js?v=500"></script>
+    <section id="result" class="panel hidden">
+      <h2 id="resultTitle">Level Complete</h2>
+      <p id="resultText"></p>
+      <button id="submitTx">Submit Score on GenLayer</button>
+      <p id="txStatus"></p>
+      <button id="nextLevel">Next Level</button>
+      <button id="retryLevel">Retry</button>
+      <button id="backHome">Home</button>
+    </section>
+  </main>
+
+  <script src="script.js?v=1000"></script>
 </body>
 </html>
