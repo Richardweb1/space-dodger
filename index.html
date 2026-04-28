@@ -4,35 +4,58 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Space Dodger - GenLayer</title>
+
   <link rel="stylesheet" href="style.css" />
+
+  <!-- ethers.js for wallet -->
   <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
 </head>
+
 <body>
+
+  <!-- MAIN MENU -->
   <div id="menu" class="screen">
     <div class="logo">▲</div>
+
     <h1>🚀 Space Dodger</h1>
-    <p>Dodge asteroids, survive, and sign your score on GenLayer testnet.</p>
+
+    <p>
+      Dodge asteroids, survive as long as you can,
+      and sign your score on GenLayer testnet.
+    </p>
 
     <button id="connectBtn">Connect Wallet</button>
+
     <p id="walletText">Wallet not connected</p>
 
     <button id="startBtn">Start Game</button>
   </div>
 
+
+  <!-- GAME -->
   <canvas id="gameCanvas"></canvas>
 
+
+  <!-- GAME OVER -->
   <div id="gameOver" class="screen hidden">
+
     <h2>Game Over</h2>
+
     <p>Score: <span id="finalScore">0</span></p>
     <p>Time: <span id="finalTime">0</span>s</p>
 
     <button id="submitTxBtn">Sign Score Transaction</button>
+
     <p id="txStatus"></p>
 
     <button id="retryBtn">Play Again</button>
     <button id="menuBtn">Main Menu</button>
+
   </div>
 
-  <script src="script.js?v=1001"></script>
+
+  <!-- IMPORTANT: force browser to reload script -->
+  <script src="script.js?v=3000"></script>
+
 </body>
 </html>
