@@ -1,36 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Space Dodger</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Menu Screen -->
+  <div id="menu">
+    <h1>SPACE DODGER</h1>
+    <div class="subtitle">DODGE. SURVIVE. CONQUER.</div>
+    <p id="walletStatus">Not connected</p>
+    <button id="connectBtn">
+      <span>💼</span> CONNECT WALLET
+    </button>
+    <button id="startBtn">
+      <span>▶</span> START GAME
+    </button>
+  </div>
 
-<div id="menu">
-  <h1>🚀 Space Dodger</h1>
+  <!-- Game Canvas -->
+  <canvas id="gameCanvas"></canvas>
 
-  <button onclick="connectWallet()">Connect Wallet</button>
-  <p id="wallet">Not connected</p>
+  <!-- Game Over Screen -->
+  <div id="gameOver" style="display:none;">
+    <h2>GAME OVER</h2>
+    <p id="finalScore">Score: 0</p>
+    <p id="finalTime">Time: 0s</p>
+    <button id="retryBtn">PLAY AGAIN</button>
+    <button id="menuBtn">MAIN MENU</button>
+    <p id="tx" style="margin-top:20px;"></p>
+  </div>
 
-  <button onclick="startGame()">Start Game</button>
-</div>
-
-<canvas id="game"></canvas>
-
-<div id="gameOver" style="display:none;">
-  <h2>Game Over</h2>
-  <p id="finalScore"></p>
-
-  <button onclick="submitScore()">Submit Score (GenLayer)</button>
-  <p id="tx"></p>
-
-  <button onclick="location.reload()">Restart</button>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
-<script src="script.js"></script>
-
+  <script src="script.js"></script>
 </body>
 </html>
