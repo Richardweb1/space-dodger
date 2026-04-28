@@ -9,36 +9,56 @@ body {
 
 canvas {
   display: none;
-  background: transparent;
+  background: #050816;
 }
 
 #menu, #gameOver {
   min-height: 100vh;
   padding: 20px;
-  background: rgba(0, 0, 20, 0.45);
+  background: rgba(0, 0, 20, 0.35);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
-  backdrop-filter: blur(2px);
+  padding-bottom: 70px;
+}
+
+#menu::before, #gameOver::before {
+  content: "";
+  position: absolute;
+  width: min(520px, 90%);
+  height: 260px;
+  bottom: 40px;
+  background: rgba(5, 8, 35, 0.75);
+  border: 1px solid rgba(155, 92, 255, 0.6);
+  border-radius: 24px;
+  box-shadow: 0 0 35px rgba(155, 92, 255, 0.45);
+  backdrop-filter: blur(10px);
+  z-index: -1;
+}
+
+#menu, #gameOver {
+  position: relative;
+  z-index: 1;
 }
 
 h1 {
-  font-size: 54px;
+  font-size: 42px;
+  margin-bottom: 18px;
   text-shadow: 0 0 20px #8b5cff;
 }
 
 button {
   padding: 16px 34px;
-  margin: 12px;
+  margin: 10px;
   cursor: pointer;
   border: 2px solid #9b5cff;
-  border-radius: 14px;
-  background: rgba(20, 10, 60, 0.85);
+  border-radius: 16px;
+  background: rgba(20, 10, 60, 0.92);
   color: white;
   font-size: 18px;
   font-weight: bold;
-  box-shadow: 0 0 20px #7c3cff;
+  box-shadow: 0 0 22px #7c3cff;
 }
 
 button:hover {
