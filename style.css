@@ -5,27 +5,10 @@
 }
 
 body {
-  min-height: 100vh;
   overflow: hidden;
   font-family: Arial, sans-serif;
   color: white;
-  background:
-    radial-gradient(circle at 20% 30%, rgba(124, 60, 255, 0.25), transparent 30%),
-    radial-gradient(circle at 80% 20%, rgba(0, 217, 255, 0.18), transparent 25%),
-    linear-gradient(135deg, #050816, #090b20);
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image:
-    radial-gradient(white 1px, transparent 1px),
-    radial-gradient(white 1px, transparent 1px);
-  background-size: 80px 80px, 140px 140px;
-  background-position: 0 0, 40px 40px;
-  opacity: 0.18;
-  pointer-events: none;
+  background: radial-gradient(circle at top, #17214a, #050816);
 }
 
 .screen {
@@ -36,45 +19,34 @@ body::before {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 14px;
+  gap: 15px;
   text-align: center;
-  position: relative;
-  z-index: 2;
 }
 
 .screen::before {
   content: "";
   position: absolute;
-  width: 100%;
-  min-height: 470px;
-  background: rgba(5, 8, 35, 0.72);
-  border: 1px solid rgba(124, 60, 255, 0.5);
+  width: min(520px, 92vw);
+  min-height: 430px;
+  background: rgba(5, 8, 35, 0.78);
   border-radius: 28px;
-  box-shadow: 0 0 45px rgba(124, 60, 255, 0.35);
-  backdrop-filter: blur(14px);
+  box-shadow: 0 0 45px rgba(124, 60, 255, 0.45);
   z-index: -1;
 }
 
-.logo {
-  font-size: 80px;
-  color: rgba(155, 92, 255, 0.5);
-  text-shadow: 0 0 40px #7c3cff;
-}
-
 h1 {
-  font-size: clamp(38px, 8vw, 62px);
+  font-size: 52px;
   text-shadow: 0 0 25px #7c3cff;
 }
 
 h2 {
-  font-size: clamp(38px, 8vw, 58px);
+  font-size: 48px;
   text-shadow: 0 0 25px #00d9ff;
 }
 
 p {
   font-size: 17px;
-  opacity: 0.92;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 button {
@@ -86,7 +58,6 @@ button {
   font-size: 18px;
   font-weight: bold;
   cursor: pointer;
-  box-shadow: 0 0 25px rgba(124, 60, 255, 0.6);
 }
 
 button:hover {
