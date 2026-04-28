@@ -8,6 +8,11 @@ const restartBtn = document.getElementById("restartBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const hud = document.getElementById("hud");
 
+const connectWalletBtn = document.getElementById("connectWallet");
+const walletAddressText = document.getElementById("walletAddress");
+const submitScoreBtn = document.getElementById("submitScoreBtn");
+const txStatus = document.getElementById("txStatus");
+
 const scoreText = document.getElementById("score");
 const finalScoreText = document.getElementById("finalScore");
 const highScoreText = document.getElementById("highScore");
@@ -15,12 +20,17 @@ const highScoreText = document.getElementById("highScore");
 let width, height;
 let player, asteroids, stars;
 let score = 0;
+let finalScore = 0;
 let highScore = localStorage.getItem("spaceDodgerHighScore") || 0;
 let gameRunning = false;
 let paused = false;
 let keys = {};
 let spawnTimer = 0;
 let difficulty = 1;
+
+let provider;
+let signer;
+let userAddress;
 
 function resizeCanvas() {
   width = canvas.width = window.innerWidth;
@@ -29,6 +39,86 @@ function resizeCanvas() {
 
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
+
+async function connectWallet() {
+  if (!window.ethereum) {
+    alert("Please install MetaMask first.");
+    return;
+  }
+
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+
+    await provider.send("eth_requestAccounts", []);
+    await switchToBaseSepolia();
+
+    signer = await provider.getSigner();
+    userAddress = await signer.getAddress();
+
+    walletAddressText.textContent =
+      "Connected: " + userAddress.slice(0, 6) + "..." + userAddress.slice(-4);
+  } catch (error) {
+    console.error(error);
+    walletAddressText.textContent = "Wallet connection failed.";
+  }
+}
+
+async function switchToBaseSepolia() {
+  const baseSepoliaChainId = "0x14a34";
+
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: baseSepoliaChainId }]
+    });
+  } catch (switchError) {
+    if (switchError.code === 4902) {
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [{
+          chainId: baseSepoliaChainId,
+          chainName: "Base Sepolia",
+          nativeCurrency: {
+            name: "ETH",
+            symbol: "ETH",
+            decimals: 18
+          },
+          rpcUrls: ["https://sepolia.base.org"],
+          blockExplorerUrls: ["https://sepolia.basescan.org"]
+        }]
+      });
+    } else {
+      throw switchError;
+    }
+  }
+}
+
+async function submitScoreOnChain() {
+  if (!signer || !userAddress) {
+    alert("Connect your wallet first.");
+    return;
+  }
+
+  try {
+    txStatus.textContent = "Submitting score to Base Sepolia...";
+
+    const message = `Space Dodger Score: ${finalScore}`;
+
+    const tx = await signer.sendTransaction({
+      to: userAddress,
+      value: 0,
+      data: ethers.hexlify(ethers.toUtf8Bytes(message))
+    });
+
+    txStatus.innerHTML =
+      `Score submitted! TX: <br>${tx.hash}<br><br>
+      View on BaseScan:<br>
+      https://sepolia.basescan.org/tx/${tx.hash}`;
+  } catch (error) {
+    console.error(error);
+    txStatus.textContent = "Transaction failed or cancelled.";
+  }
+}
 
 function createPlayer() {
   return {
@@ -41,6 +131,7 @@ function createPlayer() {
 
 function createStars() {
   stars = [];
+
   for (let i = 0; i < 100; i++) {
     stars.push({
       x: Math.random() * width,
@@ -64,6 +155,7 @@ function startGame() {
   gameOverScreen.classList.add("hidden");
   hud.style.display = "flex";
   pauseBtn.textContent = "Pause";
+  txStatus.textContent = "";
 
   createStars();
   requestAnimationFrame(gameLoop);
@@ -73,12 +165,14 @@ function endGame() {
   gameRunning = false;
   hud.style.display = "none";
 
-  if (score > highScore) {
-    highScore = score;
+  finalScore = Math.floor(score);
+
+  if (finalScore > highScore) {
+    highScore = finalScore;
     localStorage.setItem("spaceDodgerHighScore", highScore);
   }
 
-  finalScoreText.textContent = Math.floor(score);
+  finalScoreText.textContent = finalScore;
   highScoreText.textContent = Math.floor(highScore);
   gameOverScreen.classList.remove("hidden");
 }
@@ -109,6 +203,7 @@ function drawPlayer() {
 
 function drawStars() {
   ctx.fillStyle = "white";
+
   stars.forEach(star => {
     ctx.globalAlpha = 0.4 + Math.random() * 0.6;
     ctx.beginPath();
@@ -116,16 +211,19 @@ function drawStars() {
     ctx.fill();
 
     star.y += star.speed;
+
     if (star.y > height) {
       star.y = 0;
       star.x = Math.random() * width;
     }
   });
+
   ctx.globalAlpha = 1;
 }
 
 function spawnAsteroid() {
   const size = 22 + Math.random() * 35;
+
   asteroids.push({
     x: Math.random() * (width - size),
     y: -size,
@@ -137,6 +235,7 @@ function spawnAsteroid() {
 function drawAsteroids() {
   asteroids.forEach(a => {
     ctx.save();
+
     ctx.shadowBlur = 15;
     ctx.shadowColor = "#ff6b6b";
     ctx.fillStyle = "#8b5e3c";
@@ -147,7 +246,13 @@ function drawAsteroids() {
 
     ctx.fillStyle = "#5c3b25";
     ctx.beginPath();
-    ctx.arc(a.x - a.size * 0.3, a.y - a.size * 0.2, a.size * 0.18, 0, Math.PI * 2);
+    ctx.arc(
+      a.x - a.size * 0.3,
+      a.y - a.size * 0.2,
+      a.size * 0.18,
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
 
     ctx.restore();
@@ -196,6 +301,7 @@ function gameLoop() {
   drawPlayer();
 
   spawnTimer++;
+
   if (spawnTimer > Math.max(18, 55 - difficulty * 3)) {
     spawnAsteroid();
     spawnTimer = 0;
@@ -220,13 +326,22 @@ window.addEventListener("keyup", e => {
   keys[e.key] = false;
 });
 
-canvas.addEventListener("touchmove", e => {
-  e.preventDefault();
-  const touch = e.touches[0];
-  player.x = touch.clientX;
-  player.y = touch.clientY;
-}, { passive: false });
+canvas.addEventListener(
+  "touchmove",
+  e => {
+    e.preventDefault();
 
+    if (!player) return;
+
+    const touch = e.touches[0];
+    player.x = touch.clientX;
+    player.y = touch.clientY;
+  },
+  { passive: false }
+);
+
+connectWalletBtn.addEventListener("click", connectWallet);
+submitScoreBtn.addEventListener("click", submitScoreOnChain);
 startBtn.addEventListener("click", startGame);
 restartBtn.addEventListener("click", startGame);
 
