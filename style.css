@@ -5,7 +5,7 @@
 }
 
 body {
-  background: radial-gradient(circle at top, #1b244a, #050816);
+  background: url("background (1).png") center/cover no-repeat;
   font-family: Arial, sans-serif;
   color: white;
   overflow: hidden;
