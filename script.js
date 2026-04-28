@@ -1,123 +1,236 @@
-let provider;
-let signer;
-let userAddress;
+// Game variables
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const menu = document.getElementById('menu');
+const gameOver = document.getElementById('gameOver');
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+let gameRunning = false;
+let score = 0;
+let gameTime = 0;
+let startTime;
 
-let player, obstacles, gameRunning, score;
+// Player (spaceship)
+const player = {
+  x: 0,
+  y: 0,
+  width: 50,
+  height: 60,
+  speed: 6
+};
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-async function connectWallet() {
-  if (!window.ethereum) return alert("Install MetaMask");
-
-  provider = new ethers.BrowserProvider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
-
-  await switchToGenLayer();
-
-  signer = await provider.getSigner();
-  userAddress = await signer.getAddress();
-
-  document.getElementById("wallet").innerText =
-    "Connected: " + userAddress.slice(0,6) + "...";
+// Create spaceship with new triangular design
+function drawPlayer() {
+  ctx.save();
+  ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
+  
+  // Main ship body - sleek triangle design
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(0, -25); // Top point
+  ctx.lineTo(-18, 25); // Bottom left
+  ctx.lineTo(-8, 15); // Inner left
+  ctx.lineTo(0, -10); // Inner top
+  ctx.lineTo(8, 15); // Inner right
+  ctx.lineTo(18, 25); // Bottom right
+  ctx.closePath();
+  ctx.fill();
+  
+  // Center detail
+  ctx.fillStyle = '#050816';
+  ctx.beginPath();
+  ctx.moveTo(0, -8);
+  ctx.lineTo(-6, 12);
+  ctx.lineTo(6, 12);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Glow effect
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = '#00d9ff';
+  ctx.strokeStyle = '#00d9ff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  ctx.restore();
 }
 
-async function switchToGenLayer() {
-  const chainId = "0x107D";
+// Obstacles
+let obstacles = [];
 
-  try {
-    await window.ethereum.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId }]
-    });
-  } catch (err) {
-    await window.ethereum.request({
-      method: "wallet_addEthereumChain",
-      params: [{
-        chainId: chainId,
-        chainName: "GenLayer Testnet",
-        nativeCurrency: {
-          name: "GEN",
-          symbol: "GEN",
-          decimals: 18
-        },
-        rpcUrls: ["https://rpc.testnet-chain.genlayer.com"],
-        blockExplorerUrls: ["https://explorer.testnet-chain.genlayer.com"]
-      }]
-    });
+function createObstacle() {
+  const size = 30 + Math.random() * 40;
+  obstacles.push({
+    x: canvas.width,
+    y: Math.random() * (canvas.height - size),
+    width: size,
+    height: size,
+    speed: 3 + Math.random() * 2,
+    rotation: Math.random() * Math.PI * 2
+  });
+}
+
+function drawObstacle(obs) {
+  ctx.save();
+  ctx.translate(obs.x + obs.width / 2, obs.y + obs.height / 2);
+  ctx.rotate(obs.rotation);
+  
+  // Asteroid-like shape
+  ctx.fillStyle = '#8b5cff';
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = '#8b5cff';
+  
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const radius = obs.width / 2 * (0.8 + Math.random() * 0.4);
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
   }
+  ctx.closePath();
+  ctx.fill();
+  
+  ctx.restore();
 }
 
-function startGame() {
-  document.getElementById("menu").style.display = "none";
-  canvas.style.display = "block";
-
-  player = { x: 200, y: 400, size: 20 };
-  obstacles = [];
-  score = 0;
-  gameRunning = true;
-
-  requestAnimationFrame(loop);
+// Collision detection
+function checkCollision(rect1, rect2) {
+  return rect1.x < rect2.x + rect2.width &&
+         rect1.x + rect1.width > rect2.x &&
+         rect1.y < rect2.y + rect2.height &&
+         rect1.y + rect1.height > rect2.y;
 }
 
-function loop() {
+// Input handling
+const keys = {};
+window.addEventListener('keydown', (e) => keys[e.key] = true);
+window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+// Touch controls for mobile
+let touchY = null;
+canvas.addEventListener('touchstart', (e) => {
+  touchY = e.touches[0].clientY;
+});
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (touchY !== null) {
+    const deltaY = e.touches[0].clientY - touchY;
+    player.y += deltaY;
+    touchY = e.touches[0].clientY;
+  }
+});
+canvas.addEventListener('touchend', () => touchY = null);
+
+// Game loop
+function gameLoop() {
   if (!gameRunning) return;
-
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  player.x += (keys["ArrowRight"] ? 5 : 0);
-  player.x -= (keys["ArrowLeft"] ? 5 : 0);
-
-  ctx.fillStyle = "cyan";
-  ctx.fillRect(player.x, player.y, player.size, player.size);
-
-  if (Math.random() < 0.03) {
-    obstacles.push({ x: Math.random()*canvas.width, y: 0 });
+  
+  // Clear canvas
+  ctx.fillStyle = '#050816';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw stars background
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+  for (let i = 0; i < 50; i++) {
+    const x = (i * 123) % canvas.width;
+    const y = (i * 456) % canvas.height;
+    ctx.fillRect(x, y, 2, 2);
   }
-
-  obstacles.forEach(o => {
-    o.y += 4;
-    ctx.fillStyle = "red";
-    ctx.fillRect(o.x, o.y, 20, 20);
-
-    if (Math.abs(o.x - player.x) < 20 && Math.abs(o.y - player.y) < 20) {
+  
+  // Update player position
+  if (keys['ArrowUp'] || keys['w']) player.y -= player.speed;
+  if (keys['ArrowDown'] || keys['s']) player.y += player.speed;
+  if (keys['ArrowLeft'] || keys['a']) player.x -= player.speed;
+  if (keys['ArrowRight'] || keys['d']) player.x += player.speed;
+  
+  // Keep player in bounds
+  player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+  player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+  
+  // Draw player
+  drawPlayer();
+  
+  // Create obstacles
+  if (Math.random() < 0.02) createObstacle();
+  
+  // Update and draw obstacles
+  obstacles.forEach((obs, index) => {
+    obs.x -= obs.speed;
+    obs.rotation += 0.02;
+    drawObstacle(obs);
+    
+    // Check collision
+    if (checkCollision(player, obs)) {
       endGame();
     }
+    
+    // Remove off-screen obstacles
+    if (obs.x + obs.width < 0) {
+      obstacles.splice(index, 1);
+      score += 10;
+    }
   });
-
-  score++;
-  requestAnimationFrame(loop);
+  
+  // Update time
+  gameTime = Math.floor((Date.now() - startTime) / 1000);
+  
+  // Draw score
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 24px Arial';
+  ctx.fillText(`Score: ${score}`, 20, 40);
+  ctx.fillText(`Time: ${gameTime}s`, 20, 70);
+  
+  requestAnimationFrame(gameLoop);
 }
 
+// Start game
+function startGame() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  player.x = 100;
+  player.y = canvas.height / 2 - player.height / 2;
+  score = 0;
+  gameTime = 0;
+  obstacles = [];
+  startTime = Date.now();
+  
+  menu.style.display = 'none';
+  gameOver.style.display = 'none';
+  canvas.style.display = 'block';
+  gameRunning = true;
+  
+  gameLoop();
+}
+
+// End game
 function endGame() {
   gameRunning = false;
-  canvas.style.display = "none";
-
-  document.getElementById("gameOver").style.display = "block";
-  document.getElementById("finalScore").innerText = "Score: " + score;
+  canvas.style.display = 'none';
+  gameOver.style.display = 'flex';
+  
+  document.getElementById('finalScore').textContent = `Score: ${score}`;
+  document.getElementById('finalTime').textContent = `Time: ${gameTime}s`;
 }
 
-async function submitScore() {
-  if (!signer) return alert("Connect wallet first");
+// Button handlers
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('retryBtn').addEventListener('click', startGame);
+document.getElementById('menuBtn').addEventListener('click', () => {
+  gameOver.style.display = 'none';
+  menu.style.display = 'block';
+});
 
-  const tx = await signer.sendTransaction({
-    to: userAddress,
-    value: 0,
-    data: ethers.hexlify(ethers.toUtf8Bytes("Score:" + score))
-  });
+// Wallet connection (placeholder)
+document.getElementById('connectBtn').addEventListener('click', () => {
+  document.getElementById('walletStatus').innerHTML = '✓ Connected';
+  document.getElementById('walletStatus').style.color = '#6eff6e';
+});
 
-  document.getElementById("tx").innerHTML =
-    "TX:<br>" +
-    tx.hash +
-    "<br><br><a href='https://explorer.testnet-chain.genlayer.com/tx/" +
-    tx.hash +
-    "' target='_blank'>View Transaction</a>";
-}
-
-let keys = {};
-
-window.addEventListener("keydown", e => keys[e.key] = true);
-window.addEventListener("keyup", e => keys[e.key] = false);
+// Resize handler
+window.addEventListener('resize', () => {
+  if (gameRunning) {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+});
