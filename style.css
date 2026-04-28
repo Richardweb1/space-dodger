@@ -5,18 +5,12 @@
 }
 
 body {
-  margin: 0;
-  overflow: hidden;
   background: #050816;
+  overflow: hidden;
   font-family: Arial, sans-serif;
 }
 
-canvas {
-  display: none;
-  background: #050816;
-}
-
-/* HOME SCREEN */
+/* MENU */
 #menu {
   width: 100vw;
   height: 100vh;
@@ -24,40 +18,29 @@ canvas {
   background: url("background.png") center center / cover no-repeat;
 }
 
-/* Hide real text */
-#menu h1,
-#menu p {
-  display: none !important;
-}
+/* Invisible buttons (match image buttons) */
+#connectBtn, #startBtn {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(500px, 45vw);
+  height: 80px;
 
-/* Invisible real buttons */
-#menu button {
-  position: absolute !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-
-  background: transparent !important;
-  color: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  font-size: 0 !important;
-
+  background: transparent;
+  border: none;
+  color: transparent;
   cursor: pointer;
-  z-index: 20;
+  z-index: 10;
 }
 
-/* Connect Wallet clickable area */
-#menu button:nth-of-type(1) {
-  top: 52%;
-  width: 460px;
-  height: 80px;
-}
+/* Positions (adjust if needed) */
+#connectBtn { top: 52%; }
+#startBtn { top: 68%; }
 
-/* Start Game clickable area */
-#menu button:nth-of-type(2) {
-  top: 67%;
-  width: 460px;
-  height: 80px;
+/* GAME */
+canvas {
+  display: none;
+  background: #050816;
 }
 
 /* GAME OVER */
@@ -66,33 +49,29 @@ canvas {
   height: 100vh;
   background: radial-gradient(circle at top, #0a0f2c, #02030a);
   color: white;
+
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 15px;
-  text-align: center;
+}
+
+#gameOver h2 {
+  font-size: 50px;
+  text-shadow: 0 0 20px #8b5cff;
 }
 
 #gameOver button {
-  padding: 16px 34px;
-  border-radius: 16px;
+  padding: 14px 30px;
+  border-radius: 12px;
   border: none;
   background: linear-gradient(135deg, #7c3cff, #00d9ff);
   color: white;
-  font-size: 18px;
-  font-weight: bold;
   cursor: pointer;
 }
 
-@media (max-width: 768px) {
-  #menu button:nth-of-type(1) {
-    top: 52%;
-    width: 70vw;
-  }
-
-  #menu button:nth-of-type(2) {
-    top: 67%;
-    width: 70vw;
-  }
+#tx {
+  margin-top: 10px;
+  font-size: 14px;
 }
