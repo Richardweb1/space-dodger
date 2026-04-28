@@ -8,6 +8,21 @@ let gameRunning = false;
 let score = 0;
 let gameTime = 0;
 let startTime;
+let walletAddress = null;
+let isConnected = false;
+
+// GenLayer testnet configuration
+const GENLAYER_TESTNET = {
+  chainId: '0x...',  // Add GenLayer testnet chain ID
+  chainName: 'GenLayer Testnet',
+  rpcUrls: ['https://rpc.testnet.genlayer.com'], // Update with actual RPC
+  nativeCurrency: {
+    name: 'GenLayer',
+    symbol: 'GEN',
+    decimals: 18
+  },
+  blockExplorerUrls: ['https://explorer.testnet.genlayer.com']
+};
 
 // Player (spaceship)
 const player = {
@@ -186,6 +201,11 @@ function gameLoop() {
 
 // Start game
 function startGame() {
+  if (!isConnected) {
+    alert('Please connect your wallet first!');
+    return;
+  }
+  
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   player.x = 100;
@@ -203,28 +223,154 @@ function startGame() {
   gameLoop();
 }
 
-// End game
-function endGame() {
+// End game and submit score to blockchain
+async function endGame() {
   gameRunning = false;
   canvas.style.display = 'none';
   gameOver.style.display = 'flex';
   
   document.getElementById('finalScore').textContent = `Score: ${score}`;
   document.getElementById('finalTime').textContent = `Time: ${gameTime}s`;
+  
+  // Submit score to GenLayer blockchain
+  if (isConnected && score > 0) {
+    await submitScoreToBlockchain(score, gameTime);
+  }
+}
+
+// Connect to GenLayer Testnet Wallet
+async function connectWallet() {
+  if (typeof window.ethereum === 'undefined') {
+    alert('Please install MetaMask or another Web3 wallet!');
+    return;
+  }
+  
+  try {
+    // Request account access
+    const accounts = await window.ethereum.request({ 
+      method: 'eth_requestAccounts' 
+    });
+    
+    walletAddress = accounts[0];
+    
+    // Check if we're on GenLayer testnet
+    const chainId = await window.ethereum.request({ 
+      method: 'eth_chainId' 
+    });
+    
+    // If not on GenLayer, try to switch
+    if (chainId !== GENLAYER_TESTNET.chainId) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: GENLAYER_TESTNET.chainId }],
+        });
+      } catch (switchError) {
+        // Chain not added, try to add it
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [GENLAYER_TESTNET],
+          });
+        } else {
+          throw switchError;
+        }
+      }
+    }
+    
+    isConnected = true;
+    
+    // Update UI
+    const walletStatus = document.getElementById('walletStatus');
+    walletStatus.innerHTML = `✓ ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
+    walletStatus.style.color = '#6eff6e';
+    
+    // Change button text
+    document.getElementById('connectBtn').innerHTML = '<span>✓</span> CONNECTED';
+    
+  } catch (error) {
+    console.error('Wallet connection error:', error);
+    alert('Failed to connect wallet: ' + error.message);
+  }
+}
+
+// Submit score to GenLayer blockchain
+async function submitScoreToBlockchain(finalScore, finalTime) {
+  if (!isConnected || !window.ethereum) return;
+  
+  try {
+    // Contract ABI and address (update with your deployed contract)
+    const contractAddress = '0x...'; // Your GenLayer contract address
+    const contractABI = [
+      {
+        "inputs": [
+          {"internalType": "uint256", "name": "score", "type": "uint256"},
+          {"internalType": "uint256", "name": "time", "type": "uint256"}
+        ],
+        "name": "submitScore",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ];
+    
+    // Create contract instance using ethers.js or web3.js
+    // For simplicity, using direct eth_sendTransaction
+    
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const contract = new ethers.Contract(contractAddress, contractABI, signer);
+    
+    // Submit transaction
+    const tx = await contract.submitScore(finalScore, finalTime);
+    
+    // Show transaction hash
+    document.getElementById('tx').innerHTML = `
+      Transaction submitted!<br>
+      <a href="${GENLAYER_TESTNET.blockExplorerUrls[0]}/tx/${tx.hash}" 
+         target="_blank" 
+         style="color: #00d9ff; text-decoration: underline;">
+        View on Explorer: ${tx.hash.slice(0, 10)}...
+      </a>
+    `;
+    
+    // Wait for confirmation
+    await tx.wait();
+    document.getElementById('tx').innerHTML += '<br>✓ Score recorded on blockchain!';
+    
+  } catch (error) {
+    console.error('Blockchain submission error:', error);
+    document.getElementById('tx').textContent = 'Failed to submit score to blockchain';
+  }
+}
+
+// Handle account changes
+if (window.ethereum) {
+  window.ethereum.on('accountsChanged', (accounts) => {
+    if (accounts.length === 0) {
+      isConnected = false;
+      walletAddress = null;
+      document.getElementById('walletStatus').innerHTML = 'Not connected';
+      document.getElementById('walletStatus').style.color = '#ff6b6b';
+      document.getElementById('connectBtn').innerHTML = '<span>💼</span> CONNECT WALLET';
+    } else {
+      walletAddress = accounts[0];
+      document.getElementById('walletStatus').innerHTML = `✓ ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
+    }
+  });
+  
+  window.ethereum.on('chainChanged', () => {
+    window.location.reload();
+  });
 }
 
 // Button handlers
+document.getElementById('connectBtn').addEventListener('click', connectWallet);
 document.getElementById('startBtn').addEventListener('click', startGame);
 document.getElementById('retryBtn').addEventListener('click', startGame);
 document.getElementById('menuBtn').addEventListener('click', () => {
   gameOver.style.display = 'none';
   menu.style.display = 'block';
-});
-
-// Wallet connection (placeholder)
-document.getElementById('connectBtn').addEventListener('click', () => {
-  document.getElementById('walletStatus').innerHTML = '✓ Connected';
-  document.getElementById('walletStatus').style.color = '#6eff6e';
 });
 
 // Resize handler
