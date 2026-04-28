@@ -6,10 +6,9 @@
 
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  color: white;
   overflow: hidden;
   background: #050816;
+  font-family: Arial, sans-serif;
 }
 
 canvas {
@@ -19,144 +18,81 @@ canvas {
 
 /* HOME SCREEN */
 #menu {
-  min-height: 100vh;
   width: 100vw;
+  height: 100vh;
   position: relative;
   background: url("background.png") center center / cover no-repeat;
 }
 
-/* HIDE the duplicate title and subtitle - they're already in your background image */
+/* Hide real text */
 #menu h1,
-#menu .subtitle {
-  display: none;
-}
-
-/* Wallet status styling */
 #menu p {
-  display: block;
-  position: absolute;
-  top: 57%;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 16px;
-  color: white;
-  background: rgba(5, 8, 22, 0.7);
-  padding: 12px 24px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: none !important;
 }
 
-#menu p::before {
-  content: '';
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #6eff6e;
-  box-shadow: 0 0 10px #6eff6e;
-  display: inline-block;
-  margin-right: 8px;
-}
-
-/* Clickable buttons - positioned to match your background image */
+/* Invisible real buttons */
 #menu button {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(560px, 45vw);
-  height: 75px;
-  border: none;
-  background: transparent;
-  color: transparent;
+  position: absolute !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+
+  background: transparent !important;
+  color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 0 !important;
+
   cursor: pointer;
-  z-index: 10;
-  font-size: 0;
-  transition: all 0.2s ease;
+  z-index: 20;
 }
 
-#menu button:hover {
-  transform: translateX(-50%) scale(1.03);
-}
-
-/* Connect Wallet button - positioned over your image button */
+/* Connect Wallet clickable area */
 #menu button:nth-of-type(1) {
-  top: 56%;
+  top: 52%;
+  width: 460px;
+  height: 80px;
 }
 
-/* Start Game button - positioned over your image button */
+/* Start Game clickable area */
 #menu button:nth-of-type(2) {
-  top: 70%;
+  top: 67%;
+  width: 460px;
+  height: 80px;
 }
 
-/* GAME OVER SCREEN */
+/* GAME OVER */
 #gameOver {
-  min-height: 100vh;
   width: 100vw;
+  height: 100vh;
   background: radial-gradient(circle at top, #0a0f2c, #02030a);
+  color: white;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 14px;
+  gap: 15px;
   text-align: center;
-  padding: 20px;
-}
-
-#gameOver h2 {
-  font-size: clamp(40px, 8vw, 60px);
-  text-shadow: 0 0 25px #8b5cff;
-  background: linear-gradient(180deg, #ff6b6b, #8b5cff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-#gameOver p {
-  font-size: clamp(16px, 3vw, 20px);
 }
 
 #gameOver button {
-  padding: 16px 36px;
-  margin: 10px;
+  padding: 16px 34px;
   border-radius: 16px;
   border: none;
   background: linear-gradient(135deg, #7c3cff, #00d9ff);
   color: white;
   font-size: 18px;
   font-weight: bold;
-  box-shadow: 0 0 25px rgba(124, 60, 255, 0.8);
   cursor: pointer;
-  transition: transform 0.2s ease;
 }
 
-#gameOver button:hover {
-  transform: scale(1.06);
-}
-
-#tx {
-  max-width: 90%;
-  word-break: break-word;
-  font-size: 14px;
-  color: #a8a8ff;
-}
-
-/* MOBILE FIX */
 @media (max-width: 768px) {
-  #menu button {
-    width: 70vw;
-    height: 65px;
-  }
-  
   #menu button:nth-of-type(1) {
-    top: 56%;
+    top: 52%;
+    width: 70vw;
   }
-  
+
   #menu button:nth-of-type(2) {
-    top: 71%;
-  }
-  
-  #menu p {
-    top: 58%;
-    font-size: 14px;
-    padding: 10px 20px;
+    top: 67%;
+    width: 70vw;
   }
 }
