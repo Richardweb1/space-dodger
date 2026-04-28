@@ -1,351 +1,123 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-
-const menu = document.getElementById("menu");
-const gameOverScreen = document.getElementById("gameOver");
-const startBtn = document.getElementById("startBtn");
-const restartBtn = document.getElementById("restartBtn");
-const pauseBtn = document.getElementById("pauseBtn");
-const hud = document.getElementById("hud");
-
-const connectWalletBtn = document.getElementById("connectWallet");
-const walletAddressText = document.getElementById("walletAddress");
-const submitScoreBtn = document.getElementById("submitScoreBtn");
-const txStatus = document.getElementById("txStatus");
-
-const scoreText = document.getElementById("score");
-const finalScoreText = document.getElementById("finalScore");
-const highScoreText = document.getElementById("highScore");
-
-let width, height;
-let player, asteroids, stars;
-let score = 0;
-let finalScore = 0;
-let highScore = localStorage.getItem("spaceDodgerHighScore") || 0;
-let gameRunning = false;
-let paused = false;
-let keys = {};
-let spawnTimer = 0;
-let difficulty = 1;
-
 let provider;
 let signer;
 let userAddress;
 
-function resizeCanvas() {
-  width = canvas.width = window.innerWidth;
-  height = canvas.height = window.innerHeight;
-}
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
+let player, obstacles, gameRunning, score;
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
 async function connectWallet() {
-  if (!window.ethereum) {
-    alert("Please install MetaMask first.");
-    return;
-  }
+  if (!window.ethereum) return alert("Install MetaMask");
 
-  try {
-    provider = new ethers.BrowserProvider(window.ethereum);
+  provider = new ethers.BrowserProvider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
 
-    await provider.send("eth_requestAccounts", []);
-    await switchToBaseSepolia();
+  await switchToGenLayer();
 
-    signer = await provider.getSigner();
-    userAddress = await signer.getAddress();
+  signer = await provider.getSigner();
+  userAddress = await signer.getAddress();
 
-    walletAddressText.textContent =
-      "Connected: " + userAddress.slice(0, 6) + "..." + userAddress.slice(-4);
-  } catch (error) {
-    console.error(error);
-    walletAddressText.textContent = "Wallet connection failed.";
-  }
+  document.getElementById("wallet").innerText =
+    "Connected: " + userAddress.slice(0,6) + "...";
 }
 
-async function switchToBaseSepolia() {
-  const baseSepoliaChainId = "0x14a34";
+async function switchToGenLayer() {
+  const chainId = "0x107D";
 
   try {
     await window.ethereum.request({
       method: "wallet_switchEthereumChain",
-      params: [{ chainId: baseSepoliaChainId }]
+      params: [{ chainId }]
     });
-  } catch (switchError) {
-    if (switchError.code === 4902) {
-      await window.ethereum.request({
-        method: "wallet_addEthereumChain",
-        params: [{
-          chainId: baseSepoliaChainId,
-          chainName: "Base Sepolia",
-          nativeCurrency: {
-            name: "ETH",
-            symbol: "ETH",
-            decimals: 18
-          },
-          rpcUrls: ["https://sepolia.base.org"],
-          blockExplorerUrls: ["https://sepolia.basescan.org"]
-        }]
-      });
-    } else {
-      throw switchError;
-    }
-  }
-}
-
-async function submitScoreOnChain() {
-  if (!signer || !userAddress) {
-    alert("Connect your wallet first.");
-    return;
-  }
-
-  try {
-    txStatus.textContent = "Submitting score to Base Sepolia...";
-
-    const message = `Space Dodger Score: ${finalScore}`;
-
-    const tx = await signer.sendTransaction({
-      to: userAddress,
-      value: 0,
-      data: ethers.hexlify(ethers.toUtf8Bytes(message))
-    });
-
-    txStatus.innerHTML =
-      `Score submitted! TX: <br>${tx.hash}<br><br>
-      View on BaseScan:<br>
-      https://sepolia.basescan.org/tx/${tx.hash}`;
-  } catch (error) {
-    console.error(error);
-    txStatus.textContent = "Transaction failed or cancelled.";
-  }
-}
-
-function createPlayer() {
-  return {
-    x: width / 2,
-    y: height - 90,
-    size: 26,
-    speed: 7
-  };
-}
-
-function createStars() {
-  stars = [];
-
-  for (let i = 0; i < 100; i++) {
-    stars.push({
-      x: Math.random() * width,
-      y: Math.random() * height,
-      size: Math.random() * 2,
-      speed: 0.5 + Math.random() * 1.5
+  } catch (err) {
+    await window.ethereum.request({
+      method: "wallet_addEthereumChain",
+      params: [{
+        chainId: chainId,
+        chainName: "GenLayer Testnet",
+        nativeCurrency: {
+          name: "GEN",
+          symbol: "GEN",
+          decimals: 18
+        },
+        rpcUrls: ["https://rpc.testnet-chain.genlayer.com"],
+        blockExplorerUrls: ["https://explorer.testnet-chain.genlayer.com"]
+      }]
     });
   }
 }
 
 function startGame() {
-  player = createPlayer();
-  asteroids = [];
+  document.getElementById("menu").style.display = "none";
+  canvas.style.display = "block";
+
+  player = { x: 200, y: 400, size: 20 };
+  obstacles = [];
   score = 0;
-  difficulty = 1;
-  spawnTimer = 0;
-  paused = false;
   gameRunning = true;
 
-  menu.classList.add("hidden");
-  gameOverScreen.classList.add("hidden");
-  hud.style.display = "flex";
-  pauseBtn.textContent = "Pause";
-  txStatus.textContent = "";
+  requestAnimationFrame(loop);
+}
 
-  createStars();
-  requestAnimationFrame(gameLoop);
+function loop() {
+  if (!gameRunning) return;
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  player.x += (keys["ArrowRight"] ? 5 : 0);
+  player.x -= (keys["ArrowLeft"] ? 5 : 0);
+
+  ctx.fillStyle = "cyan";
+  ctx.fillRect(player.x, player.y, player.size, player.size);
+
+  if (Math.random() < 0.03) {
+    obstacles.push({ x: Math.random()*canvas.width, y: 0 });
+  }
+
+  obstacles.forEach(o => {
+    o.y += 4;
+    ctx.fillStyle = "red";
+    ctx.fillRect(o.x, o.y, 20, 20);
+
+    if (Math.abs(o.x - player.x) < 20 && Math.abs(o.y - player.y) < 20) {
+      endGame();
+    }
+  });
+
+  score++;
+  requestAnimationFrame(loop);
 }
 
 function endGame() {
   gameRunning = false;
-  hud.style.display = "none";
+  canvas.style.display = "none";
 
-  finalScore = Math.floor(score);
-
-  if (finalScore > highScore) {
-    highScore = finalScore;
-    localStorage.setItem("spaceDodgerHighScore", highScore);
-  }
-
-  finalScoreText.textContent = finalScore;
-  highScoreText.textContent = Math.floor(highScore);
-  gameOverScreen.classList.remove("hidden");
+  document.getElementById("gameOver").style.display = "block";
+  document.getElementById("finalScore").innerText = "Score: " + score;
 }
 
-function drawPlayer() {
-  ctx.save();
-  ctx.translate(player.x, player.y);
+async function submitScore() {
+  if (!signer) return alert("Connect wallet first");
 
-  ctx.shadowBlur = 20;
-  ctx.shadowColor = "#00d9ff";
-
-  ctx.fillStyle = "#00d9ff";
-  ctx.beginPath();
-  ctx.moveTo(0, -player.size);
-  ctx.lineTo(player.size * 0.8, player.size);
-  ctx.lineTo(0, player.size * 0.5);
-  ctx.lineTo(-player.size * 0.8, player.size);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.arc(0, 0, 6, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
-}
-
-function drawStars() {
-  ctx.fillStyle = "white";
-
-  stars.forEach(star => {
-    ctx.globalAlpha = 0.4 + Math.random() * 0.6;
-    ctx.beginPath();
-    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-    ctx.fill();
-
-    star.y += star.speed;
-
-    if (star.y > height) {
-      star.y = 0;
-      star.x = Math.random() * width;
-    }
+  const tx = await signer.sendTransaction({
+    to: userAddress,
+    value: 0,
+    data: ethers.hexlify(ethers.toUtf8Bytes("Score:" + score))
   });
 
-  ctx.globalAlpha = 1;
+  document.getElementById("tx").innerHTML =
+    "TX:<br>" +
+    tx.hash +
+    "<br><br><a href='https://explorer.testnet-chain.genlayer.com/tx/" +
+    tx.hash +
+    "' target='_blank'>View Transaction</a>";
 }
 
-function spawnAsteroid() {
-  const size = 22 + Math.random() * 35;
+let keys = {};
 
-  asteroids.push({
-    x: Math.random() * (width - size),
-    y: -size,
-    size,
-    speed: 2 + difficulty + Math.random() * 2
-  });
-}
-
-function drawAsteroids() {
-  asteroids.forEach(a => {
-    ctx.save();
-
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = "#ff6b6b";
-    ctx.fillStyle = "#8b5e3c";
-
-    ctx.beginPath();
-    ctx.arc(a.x, a.y, a.size, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#5c3b25";
-    ctx.beginPath();
-    ctx.arc(
-      a.x - a.size * 0.3,
-      a.y - a.size * 0.2,
-      a.size * 0.18,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-
-    ctx.restore();
-
-    a.y += a.speed;
-  });
-
-  asteroids = asteroids.filter(a => a.y < height + a.size);
-}
-
-function updatePlayer() {
-  if (keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
-  if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
-  if (keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
-  if (keys["ArrowDown"] || keys["s"]) player.y += player.speed;
-
-  player.x = Math.max(player.size, Math.min(width - player.size, player.x));
-  player.y = Math.max(player.size, Math.min(height - player.size, player.y));
-}
-
-function checkCollision() {
-  for (let a of asteroids) {
-    const dx = player.x - a.x;
-    const dy = player.y - a.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < player.size + a.size * 0.8) {
-      endGame();
-      return;
-    }
-  }
-}
-
-function gameLoop() {
-  if (!gameRunning) return;
-
-  if (paused) {
-    requestAnimationFrame(gameLoop);
-    return;
-  }
-
-  ctx.clearRect(0, 0, width, height);
-
-  drawStars();
-  updatePlayer();
-  drawPlayer();
-
-  spawnTimer++;
-
-  if (spawnTimer > Math.max(18, 55 - difficulty * 3)) {
-    spawnAsteroid();
-    spawnTimer = 0;
-  }
-
-  drawAsteroids();
-  checkCollision();
-
-  score += 0.1;
-  difficulty += 0.0015;
-
-  scoreText.textContent = Math.floor(score);
-
-  requestAnimationFrame(gameLoop);
-}
-
-window.addEventListener("keydown", e => {
-  keys[e.key] = true;
-});
-
-window.addEventListener("keyup", e => {
-  keys[e.key] = false;
-});
-
-canvas.addEventListener(
-  "touchmove",
-  e => {
-    e.preventDefault();
-
-    if (!player) return;
-
-    const touch = e.touches[0];
-    player.x = touch.clientX;
-    player.y = touch.clientY;
-  },
-  { passive: false }
-);
-
-connectWalletBtn.addEventListener("click", connectWallet);
-submitScoreBtn.addEventListener("click", submitScoreOnChain);
-startBtn.addEventListener("click", startGame);
-restartBtn.addEventListener("click", startGame);
-
-pauseBtn.addEventListener("click", () => {
-  paused = !paused;
-  pauseBtn.textContent = paused ? "Resume" : "Pause";
-});
+window.addEventListener("keydown", e => keys[e.key] = true);
+window.addEventListener("keyup", e => keys[e.key] = false);
