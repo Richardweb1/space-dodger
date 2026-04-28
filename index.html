@@ -5,19 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Space Dodger - GenLayer</title>
 
-  <link rel="stylesheet" href="style.css?v=12000">
+  <link rel="stylesheet" href="style.css?v=15000"/>
   <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
 </head>
 <body>
 
   <div id="menu" class="screen">
-    <h1>🚀 Space Dodger</h1>
-    <p>Move left & right. Dodge obstacles. Sign your score.</p>
+    <div class="title-row">
+      <span class="rocket">🚀</span>
+      <h1><span>Space</span><span>Dodger</span></h1>
+    </div>
 
     <button id="connectBtn">Connect Wallet</button>
     <p id="walletText">Wallet not connected</p>
 
-    <button id="startBtn">Start Game</button>
+    <button id="startBtn" class="small-btn">Start Game</button>
   </div>
 
   <canvas id="gameCanvas"></canvas>
@@ -30,10 +32,10 @@
     <button id="submitTxBtn">Sign Score Transaction</button>
     <p id="txStatus"></p>
 
-    <button id="retryBtn">Play Again</button>
-    <button id="menuBtn">Main Menu</button>
+    <button id="retryBtn" class="small-btn">Play Again</button>
+    <button id="menuBtn" class="small-btn">Main Menu</button>
   </div>
 
-  <script src="script.js?v=12000"></script>
+  <script src="script.js?v=15000"></script>
 </body>
 </html>
