@@ -12,7 +12,11 @@
 
     <div id="menu" class="screen">
       <h1>🚀 Space Dodger</h1>
-      <p>Dodge asteroids and survive as long as you can!</p>
+      <p>Dodge asteroids, survive, and submit your score on Base Sepolia testnet.</p>
+
+      <button id="connectWallet">Connect Wallet</button>
+      <p id="walletAddress">Wallet not connected</p>
+
       <button id="startBtn">Start Game</button>
     </div>
 
@@ -20,6 +24,10 @@
       <h1>Game Over</h1>
       <p>Score: <span id="finalScore">0</span></p>
       <p>High Score: <span id="highScore">0</span></p>
+
+      <button id="submitScoreBtn">Submit Score On-Chain</button>
+      <p id="txStatus"></p>
+
       <button id="restartBtn">Restart</button>
     </div>
 
@@ -29,6 +37,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
