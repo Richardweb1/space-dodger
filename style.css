@@ -10,7 +10,6 @@ body {
   font-family: Arial, sans-serif;
 }
 
-/* MENU with background image */
 #menu {
   width: 100vw;
   height: 100vh;
@@ -18,35 +17,52 @@ body {
   background: url("background.png") center center / cover no-repeat;
 }
 
-/* Invisible buttons */
-#connectBtn, #startBtn {
+/* Cover the "Not connected" text inside the background image */
+#menu::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 60.5%;
+  transform: translateX(-50%);
+  width: 520px;
+  height: 95px;
+  background: rgba(5, 8, 22, 0.98);
+  border-radius: 18px;
+  z-index: 2;
+}
+
+/* invisible clickable areas */
+#connectBtn,
+#startBtn {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  width: min(500px, 45vw);
-  height: 80px;
+  width: 520px;
+  height: 90px;
   background: transparent;
   border: none;
   cursor: pointer;
+  z-index: 10;
 }
 
-/* Match your image positions */
-#connectBtn { top: 52%; }
-#startBtn { top: 68%; }
+#connectBtn {
+  top: 48.5%;
+}
 
-/* GAME */
+#startBtn {
+  top: 73.5%;
+}
+
 canvas {
   display: none;
   background: #050816;
 }
 
-/* GAME OVER */
 #gameOver {
   width: 100vw;
   height: 100vh;
   background: radial-gradient(circle at top, #0a0f2c, #02030a);
   color: white;
-
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -66,9 +82,35 @@ canvas {
   background: linear-gradient(135deg, #7c3cff, #00d9ff);
   color: white;
   cursor: pointer;
+  font-weight: bold;
 }
 
 #tx {
   margin-top: 10px;
   font-size: 14px;
+  text-align: center;
+  max-width: 90%;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  #connectBtn,
+  #startBtn {
+    width: 70vw;
+    height: 70px;
+  }
+
+  #connectBtn {
+    top: 49%;
+  }
+
+  #startBtn {
+    top: 73%;
+  }
+
+  #menu::after {
+    width: 70vw;
+    height: 80px;
+    top: 60.5%;
+  }
 }
