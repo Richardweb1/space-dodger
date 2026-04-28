@@ -31,7 +31,7 @@ canvas {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: rgba(5, 8, 22, 0.75);
+  background: rgba(5, 8, 22, 0.78);
   backdrop-filter: blur(12px);
   text-align: center;
   padding: 20px;
@@ -49,13 +49,13 @@ h1 {
 }
 
 p {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   margin: 8px 0;
   opacity: 0.9;
 }
 
 button {
-  margin-top: 18px;
+  margin-top: 14px;
   padding: 14px 28px;
   border: none;
   border-radius: 999px;
@@ -69,6 +69,18 @@ button {
 
 button:hover {
   transform: scale(1.05);
+}
+
+#submitScoreBtn {
+  background: linear-gradient(135deg, #7cffc4, #00d9ff);
+}
+
+#walletAddress,
+#txStatus {
+  font-size: 0.95rem;
+  color: #bdf6ff;
+  word-break: break-all;
+  max-width: 90%;
 }
 
 #hud {
