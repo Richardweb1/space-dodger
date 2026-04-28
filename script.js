@@ -37,15 +37,16 @@ let score = 0;
 let gameTime = 0;
 let startTime = 0;
 
+let roadOffset = 0;
+let obstacles = [];
 const keys = {};
-let asteroids = [];
-let stars = [];
 
 const player = {
-  x: 100,
-  y: 300,
-  size: 34,
-  speed: 7
+  x: 0,
+  y: 0,
+  width: 54,
+  height: 70,
+  speed: 8
 };
 
 function resizeCanvas() {
@@ -53,8 +54,8 @@ function resizeCanvas() {
   height = canvas.height = window.innerHeight;
 }
 
-window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
 
 async function connectWallet() {
   if (!window.ethereum) {
@@ -94,45 +95,24 @@ async function connectWallet() {
     isConnected = true;
     walletText.textContent =
       "Connected: " + walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4);
-
-    alert("Connected to GenLayer Testnet Chain ✅");
   } catch (err) {
     console.error(err);
     alert("Wallet connection failed.");
   }
 }
 
-function createStars() {
-  stars = [];
-
-  for (let i = 0; i < 120; i++) {
-    stars.push({
-      x: Math.random() * width,
-      y: Math.random() * height,
-      r: Math.random() * 2,
-      speed: 0.4 + Math.random() * 1.1
-    });
-  }
-}
-
 function startGame() {
-  if (!isConnected) {
-    alert("Connect wallet first.");
-    return;
-  }
-
   resizeCanvas();
 
-  player.x = width * 0.15;
-  player.y = height / 2;
+  player.x = width / 2 - player.width / 2;
+  player.y = height - 110;
 
-  asteroids = [];
   score = 0;
   gameTime = 0;
+  roadOffset = 0;
+  obstacles = [];
   startTime = Date.now();
   txStatus.textContent = "";
-
-  createStars();
 
   menu.classList.add("hidden");
   gameOver.classList.add("hidden");
@@ -142,110 +122,117 @@ function startGame() {
   requestAnimationFrame(gameLoop);
 }
 
-function drawStars() {
-  ctx.fillStyle = "white";
+function drawRoad() {
+  ctx.fillStyle = "#050816";
+  ctx.fillRect(0, 0, width, height);
 
-  stars.forEach(star => {
-    ctx.globalAlpha = 0.35 + Math.random() * 0.5;
-    ctx.beginPath();
-    ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
-    ctx.fill();
+  const roadWidth = Math.min(520, width * 0.82);
+  const roadX = width / 2 - roadWidth / 2;
 
-    star.x -= star.speed;
+  ctx.fillStyle = "#111936";
+  ctx.fillRect(roadX, 0, roadWidth, height);
 
-    if (star.x < 0) {
-      star.x = width;
-      star.y = Math.random() * height;
-    }
-  });
+  ctx.strokeStyle = "rgba(0, 217, 255, 0.8)";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(roadX, 0);
+  ctx.lineTo(roadX, height);
+  ctx.moveTo(roadX + roadWidth, 0);
+  ctx.lineTo(roadX + roadWidth, height);
+  ctx.stroke();
 
-  ctx.globalAlpha = 1;
+  ctx.strokeStyle = "rgba(255,255,255,0.45)";
+  ctx.lineWidth = 5;
+  ctx.setLineDash([35, 35]);
+  ctx.lineDashOffset = -roadOffset;
+  ctx.beginPath();
+  ctx.moveTo(width / 2, 0);
+  ctx.lineTo(width / 2, height);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  roadOffset += 8;
 }
 
 function drawPlayer() {
   ctx.save();
-  ctx.translate(player.x, player.y);
+  ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
 
   ctx.shadowBlur = 20;
   ctx.shadowColor = "#00d9ff";
-
   ctx.fillStyle = "#00f7ff";
+
   ctx.beginPath();
-  ctx.moveTo(player.size, 0);
-  ctx.lineTo(-player.size, -player.size * 0.75);
-  ctx.lineTo(-player.size * 0.45, 0);
-  ctx.lineTo(-player.size, player.size * 0.75);
+  ctx.moveTo(0, -35);
+  ctx.lineTo(-27, 35);
+  ctx.lineTo(0, 18);
+  ctx.lineTo(27, 35);
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = "white";
   ctx.beginPath();
-  ctx.arc(-3, 0, 7, 0, Math.PI * 2);
+  ctx.arc(0, -5, 8, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
 }
 
-function spawnAsteroid() {
-  const size = 24 + Math.random() * 42;
+function spawnObstacle() {
+  const roadWidth = Math.min(520, width * 0.82);
+  const roadX = width / 2 - roadWidth / 2;
+  const size = 42 + Math.random() * 35;
 
-  asteroids.push({
-    x: width + size,
-    y: Math.random() * (height - size * 2) + size,
+  obstacles.push({
+    x: roadX + Math.random() * (roadWidth - size),
+    y: -size,
     size,
-    speed: 2 + Math.random() * 2 + score / 900,
-    rotation: Math.random() * Math.PI * 2
+    speed: 4 + Math.random() * 2 + score / 900
   });
 }
 
-function drawAsteroids() {
-  asteroids.forEach(a => {
-    a.x -= a.speed;
-    a.rotation += 0.025;
+function drawObstacles() {
+  obstacles.forEach(o => {
+    o.y += o.speed;
 
     ctx.save();
-    ctx.translate(a.x, a.y);
-    ctx.rotate(a.rotation);
-
-    ctx.shadowBlur = 16;
+    ctx.shadowBlur = 18;
     ctx.shadowColor = "#8b5cff";
     ctx.fillStyle = "#8b5cff";
 
     ctx.beginPath();
-    for (let i = 0; i < 9; i++) {
-      const angle = (i / 9) * Math.PI * 2;
-      const radius = a.size * (0.75 + Math.random() * 0.18);
-      const x = Math.cos(angle) * radius;
-      const y = Math.sin(angle) * radius;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.closePath();
+    ctx.arc(o.x + o.size / 2, o.y + o.size / 2, o.size / 2, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
   });
 
-  asteroids = asteroids.filter(a => a.x + a.size > 0);
+  obstacles = obstacles.filter(o => o.y < height + o.size);
 }
 
 function updatePlayer() {
-  if (keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
-  if (keys["ArrowDown"] || keys["s"]) player.y += player.speed;
-  if (keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
-  if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+  if (keys["ArrowLeft"] || keys["a"]) {
+    player.x -= player.speed;
+  }
 
-  player.x = Math.max(player.size, Math.min(width - player.size, player.x));
-  player.y = Math.max(player.size, Math.min(height - player.size, player.y));
+  if (keys["ArrowRight"] || keys["d"]) {
+    player.x += player.speed;
+  }
+
+  const roadWidth = Math.min(520, width * 0.82);
+  const roadX = width / 2 - roadWidth / 2;
+
+  player.x = Math.max(roadX, Math.min(roadX + roadWidth - player.width, player.x));
 }
 
 function checkCollision() {
-  for (const a of asteroids) {
-    const dx = player.x - a.x;
-    const dy = player.y - a.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    if (dist < player.size * 0.72 + a.size * 0.72) {
+  for (const o of obstacles) {
+    if (
+      player.x < o.x + o.size &&
+      player.x + player.width > o.x &&
+      player.y < o.y + o.size &&
+      player.y + player.height > o.y
+    ) {
       endGame();
       return;
     }
@@ -255,20 +242,18 @@ function checkCollision() {
 function gameLoop() {
   if (!gameRunning) return;
 
-  ctx.clearRect(0, 0, width, height);
-
-  drawStars();
+  drawRoad();
   updatePlayer();
   drawPlayer();
 
-  if (score > 120 && Math.random() < 0.015) {
-    spawnAsteroid();
+  if (score > 80 && Math.random() < 0.025) {
+    spawnObstacle();
   }
 
-  drawAsteroids();
+  drawObstacles();
   checkCollision();
 
-  score += 1;
+  score++;
   gameTime = Math.floor((Date.now() - startTime) / 1000);
 
   ctx.fillStyle = "white";
@@ -304,7 +289,7 @@ async function submitScoreTransaction() {
     const signer = provider.getSigner();
 
     const message =
-      `SpaceDodger|Wallet:${walletAddress}|Score:${score}|Time:${gameTime}|Network:GenLayerTestnetChain`;
+      `SpaceDodger|Wallet:${walletAddress}|Score:${score}|Time:${gameTime}|Network:GenLayer`;
 
     const tx = await signer.sendTransaction({
       to: walletAddress,
@@ -329,23 +314,6 @@ window.addEventListener("keydown", e => {
 
 window.addEventListener("keyup", e => {
   keys[e.key] = false;
-});
-
-canvas.addEventListener("touchmove", e => {
-  e.preventDefault();
-
-  if (!gameRunning) return;
-
-  const touch = e.touches[0];
-  player.x = touch.clientX;
-  player.y = touch.clientY;
-}, { passive: false });
-
-canvas.addEventListener("mousemove", e => {
-  if (!gameRunning) return;
-
-  player.x = e.clientX;
-  player.y = e.clientY;
 });
 
 connectBtn.onclick = connectWallet;
