@@ -10,12 +10,12 @@ https://richardweb1.github.io/space-dodger/
 
 * Smooth gameplay only on desktop 
 * Score tracking and high score
-* Wallet connection Base Sepolia testnet
+* Wallet connection Uses GenLayer testnet (GEN faucet) for safe non-financial testing
 * On-chain score submission (demo)
 
 ##  GenLayer Concept
 
-This project explores integrating GenLayer as an AI-powered trust layer for gaming.
+This project explores integrating GenLayer as an AI powered trust layer for gaming.
 
 GenLayer can be used to:
 
@@ -32,7 +32,7 @@ Twitter: https://x.com/GenLayer
 
 * HTML, CSS, JavaScript
 * Ethers.js
-* Base Sepolia (testnet)
+* Uses GenLayer testnet (GEN faucet) for safe non-financial testing
 
 
 
