@@ -10,7 +10,7 @@ body {
   font-family: Arial, sans-serif;
 }
 
-/* MENU */
+/* MENU with background image */
 #menu {
   width: 100vw;
   height: 100vh;
@@ -18,22 +18,19 @@ body {
   background: url("background.png") center center / cover no-repeat;
 }
 
-/* Invisible buttons (match image buttons) */
+/* Invisible buttons */
 #connectBtn, #startBtn {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
   width: min(500px, 45vw);
   height: 80px;
-
   background: transparent;
   border: none;
-  color: transparent;
   cursor: pointer;
-  z-index: 10;
 }
 
-/* Positions (adjust if needed) */
+/* Match your image positions */
 #connectBtn { top: 52%; }
 #startBtn { top: 68%; }
 
