@@ -42,17 +42,18 @@ body {
 .title-row {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 10px; /* smaller gap */
 }
 
 .rocket {
-  font-size: 46px;
-  filter: drop-shadow(0 0 16px rgba(155, 92, 255, 0.9));
+  font-size: 28px;       /* smaller rocket */
+  filter: drop-shadow(0 0 10px rgba(155, 92, 255, 0.7));
 }
 
 h1 {
-  font-size: 40px;
-  text-shadow: 0 0 18px #8b5cff;
+  font-size: 32px;        /* smaller */
+  line-height: 1.1;
+  text-shadow: 0 0 12px #8b5cff;
 }
 
 h2 {
