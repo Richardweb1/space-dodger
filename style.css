@@ -50,10 +50,10 @@ body {
   filter: drop-shadow(0 0 10px rgba(155, 92, 255, 0.7));
 }
 
-h1 {
-  font-size: 26px;
+.screen h1 {
+  font-size: 24px !important;   /* 👈 force smaller */
   line-height: 1.1;
-  text-shadow: 0 0 10px #8b5cff;
+  text-shadow: 0 0 8px #8b5cff;
   letter-spacing: 1px;
 }
 
