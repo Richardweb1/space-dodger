@@ -14,8 +14,8 @@ html, body {
 
 body {
   background:
-    linear-gradient(rgba(5, 8, 30, 0.25), rgba(5, 8, 30, 0.55)),
-    url("background (1).png") center center / cover no-repeat fixed;
+    linear-gradient(rgba(5, 8, 30, 0.15), rgba(5, 8, 30, 0.35)),
+    url("background.png?v=2") center center / cover no-repeat fixed;
 }
 
 /* front panel */
