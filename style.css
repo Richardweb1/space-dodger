@@ -51,9 +51,10 @@ body {
 }
 
 h1 {
-  font-size: 32px;        /* smaller */
+  font-size: 26px;
   line-height: 1.1;
-  text-shadow: 0 0 12px #8b5cff;
+  text-shadow: 0 0 10px #8b5cff;
+  letter-spacing: 1px;
 }
 
 h2 {
