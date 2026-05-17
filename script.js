@@ -83,6 +83,7 @@ async function loadDifficultyTier() {
     else if (tier === "hard")   baseObstacleSpeed = 7;
     else if (tier === "chaos")  baseObstacleSpeed = 10;
 
+    document.getElementById("difficultyText").textContent = `AI Difficulty: ${tier}`;
     console.log(`AI difficulty tier loaded: ${tier} (speed: ${baseObstacleSpeed})`);
   } catch (e) {
     console.log("Could not load difficulty from contract, using default.");
@@ -365,6 +366,7 @@ async function endGame() {
 
   finalScoreText.textContent = score;
   finalTimeText.textContent = gameTime;
+  document.getElementById("finalDodged").textContent = asteroidsAvoided;
 
   gameOver.classList.remove("hidden");
 
