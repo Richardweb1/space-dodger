@@ -1,3 +1,8 @@
+// ─── GenLayer Contract Config ─────────────────────────────────────────────────
+const CONTRACT_ADDRESS = "0xb1925DcD882c76bA94AdeB47D313748FA3ef480c";
+const GENLAYER_RPC = "https://rpc.testnet-chain.genlayer.com";
+
+// ─── Canvas & UI ──────────────────────────────────────────────────────────────
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -15,27 +20,25 @@ const finalScoreText = document.getElementById("finalScore");
 const finalTimeText = document.getElementById("finalTime");
 const txStatus = document.getElementById("txStatus");
 
+// ─── GenLayer Chain Config ─────────────────────────────────────────────────────
 const GENLAYER = {
   chainId: "0x107d",
   chainName: "GenLayer Testnet Chain",
   rpcUrls: ["https://rpc.testnet-chain.genlayer.com"],
   explorer: "https://explorer.testnet-chain.genlayer.com",
-  nativeCurrency: {
-    name: "GEN",
-    symbol: "GEN",
-    decimals: 18
-  }
+  nativeCurrency: { name: "GEN", symbol: "GEN", decimals: 18 }
 };
 
+// ─── Game State ────────────────────────────────────────────────────────────────
 let walletAddress = null;
 let isConnected = false;
-
-let width;
-let height;
+let width, height;
 let gameRunning = false;
 let score = 0;
 let gameTime = 0;
 let startTime = 0;
+let asteroidsAvoided = 0;   // ← NEW: tracks dodged asteroids for contract
+let baseObstacleSpeed = 5;  // ← NEW: adjusted by AI difficulty tier
 
 let roadOffset = 0;
 let obstacles = [];
@@ -49,6 +52,7 @@ const player = {
   speed: 8
 };
 
+// ─── Canvas Setup ──────────────────────────────────────────────────────────────
 function resizeCanvas() {
   width = canvas.width = window.innerWidth;
   height = canvas.height = window.innerHeight;
@@ -57,6 +61,89 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
+// ─── GenLayer: Read difficulty tier from contract ──────────────────────────────
+async function loadDifficultyTier() {
+  try {
+    const res = await fetch(GENLAYER_RPC, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "gen_call",
+        params: [CONTRACT_ADDRESS, "get_difficulty_tier", [], "latest"]
+      })
+    });
+    const data = await res.json();
+    const tier = data.result;
+
+    // AI-determined difficulty adjusts obstacle speed
+    if      (tier === "easy")   baseObstacleSpeed = 3;
+    else if (tier === "normal") baseObstacleSpeed = 5;
+    else if (tier === "hard")   baseObstacleSpeed = 7;
+    else if (tier === "chaos")  baseObstacleSpeed = 10;
+
+    console.log(`AI difficulty tier loaded: ${tier} (speed: ${baseObstacleSpeed})`);
+  } catch (e) {
+    console.log("Could not load difficulty from contract, using default.");
+  }
+}
+
+// ─── GenLayer: Submit score to contract for AI validation ─────────────────────
+async function submitScoreTransaction() {
+  if (!walletAddress) {
+    txStatus.textContent = "Connect wallet first.";
+    return;
+  }
+
+  try {
+    txStatus.textContent = "Submitting score for AI validation...";
+
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: GENLAYER.chainId }]
+    });
+
+    // Encode the contract call as JSON calldata (GenLayer format)
+    const survivalMs = gameTime * 1000;
+    const callData = JSON.stringify({
+      method: "submit_score",
+      args: [
+        score.toString(),
+        survivalMs.toString(),
+        asteroidsAvoided.toString(),
+        "0"   // power_ups (not yet in game — extend later)
+      ]
+    });
+
+    const encoded = "0x" + Array.from(new TextEncoder().encode(callData))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    const txHash = await window.ethereum.request({
+      method: "eth_sendTransaction",
+      params: [{
+        from: walletAddress,
+        to: CONTRACT_ADDRESS,
+        value: "0x0",
+        data: encoded
+      }]
+    });
+
+    txStatus.innerHTML =
+      `Score submitted for AI validation ✅<br>
+       Validators are reviewing your run...<br>
+       <a href="${GENLAYER.explorer}/tx/${txHash}" target="_blank">
+         View TX on GenLayer Explorer
+       </a>`;
+
+  } catch (err) {
+    console.error(err);
+    txStatus.textContent = "Submission failed. Make sure you have GEN testnet gas.";
+  }
+}
+
+// ─── Wallet Connection ─────────────────────────────────────────────────────────
 async function connectWallet() {
   if (!window.ethereum) {
     alert("Install MetaMask first.");
@@ -64,10 +151,7 @@ async function connectWallet() {
   }
 
   try {
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts"
-    });
-
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
     walletAddress = accounts[0];
 
     try {
@@ -102,7 +186,8 @@ async function connectWallet() {
   }
 }
 
-function startGame() {
+// ─── Game Start ────────────────────────────────────────────────────────────────
+async function startGame() {
   if (!isConnected) {
     alert("Connect wallet first.");
     return;
@@ -117,8 +202,12 @@ function startGame() {
   gameTime = 0;
   roadOffset = 0;
   obstacles = [];
+  asteroidsAvoided = 0;  // ← reset counter
   startTime = Date.now();
   txStatus.textContent = "";
+
+  // ← NEW: load AI difficulty before game begins
+  await loadDifficultyTier();
 
   menu.classList.add("hidden");
   gameOver.classList.add("hidden");
@@ -128,6 +217,7 @@ function startGame() {
   requestAnimationFrame(gameLoop);
 }
 
+// ─── Drawing ───────────────────────────────────────────────────────────────────
 function drawRoad() {
   ctx.fillStyle = "#050816";
   ctx.fillRect(0, 0, width, height);
@@ -163,11 +253,9 @@ function drawRoad() {
 function drawPlayer() {
   ctx.save();
   ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
-
   ctx.shadowBlur = 20;
   ctx.shadowColor = "#00d9ff";
   ctx.fillStyle = "#00f7ff";
-
   ctx.beginPath();
   ctx.moveTo(0, -35);
   ctx.lineTo(-27, 35);
@@ -175,12 +263,10 @@ function drawPlayer() {
   ctx.lineTo(27, 35);
   ctx.closePath();
   ctx.fill();
-
   ctx.fillStyle = "white";
   ctx.beginPath();
   ctx.arc(0, -5, 8, 0, Math.PI * 2);
   ctx.fill();
-
   ctx.restore();
 }
 
@@ -193,7 +279,9 @@ function spawnObstacle() {
     x: roadX + Math.random() * (roadWidth - size),
     y: -size,
     size,
-    speed: 4 + Math.random() * 2 + score / 900
+    // ← uses baseObstacleSpeed set by AI difficulty tier
+    speed: baseObstacleSpeed + Math.random() * 2 + score / 900,
+    counted: false  // ← NEW: avoids double-counting
   });
 }
 
@@ -201,15 +289,19 @@ function drawObstacles() {
   obstacles.forEach(o => {
     o.y += o.speed;
 
+    // ← NEW: count as avoided when it passes the player
+    if (!o.counted && o.y > player.y + player.height) {
+      asteroidsAvoided++;
+      o.counted = true;
+    }
+
     ctx.save();
     ctx.shadowBlur = 18;
     ctx.shadowColor = "#8b5cff";
     ctx.fillStyle = "#8b5cff";
-
     ctx.beginPath();
     ctx.arc(o.x + o.size / 2, o.y + o.size / 2, o.size / 2, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.restore();
   });
 
@@ -222,11 +314,7 @@ function updatePlayer() {
 
   const roadWidth = Math.min(520, width * 0.82);
   const roadX = width / 2 - roadWidth / 2;
-
-  player.x = Math.max(
-    roadX,
-    Math.min(roadX + roadWidth - player.width, player.x)
-  );
+  player.x = Math.max(roadX, Math.min(roadX + roadWidth - player.width, player.x));
 }
 
 function checkCollision() {
@@ -243,6 +331,7 @@ function checkCollision() {
   }
 }
 
+// ─── Game Loop ─────────────────────────────────────────────────────────────────
 function gameLoop() {
   if (!gameRunning) return;
 
@@ -250,9 +339,7 @@ function gameLoop() {
   updatePlayer();
   drawPlayer();
 
-  if (score > 80 && Math.random() < 0.025) {
-    spawnObstacle();
-  }
+  if (score > 80 && Math.random() < 0.025) spawnObstacle();
 
   drawObstacles();
   checkCollision();
@@ -264,10 +351,12 @@ function gameLoop() {
   ctx.font = "bold 24px Arial";
   ctx.fillText("Score: " + score, 20, 40);
   ctx.fillText("Time: " + gameTime + "s", 20, 72);
+  ctx.fillText("Dodged: " + asteroidsAvoided, 20, 104); // ← show counter in-game
 
   requestAnimationFrame(gameLoop);
 }
 
+// ─── Game Over ─────────────────────────────────────────────────────────────────
 async function endGame() {
   if (!gameRunning) return;
 
@@ -282,61 +371,14 @@ async function endGame() {
   await submitScoreTransaction();
 }
 
-async function submitScoreTransaction() {
-  if (!walletAddress) {
-    txStatus.textContent = "Connect wallet first.";
-    return;
-  }
+// ─── Event Listeners ───────────────────────────────────────────────────────────
+window.addEventListener("keydown", e => { keys[e.key] = true; });
+window.addEventListener("keyup",   e => { keys[e.key] = false; });
 
-  try {
-    txStatus.textContent = "Waiting for MetaMask signature...";
-
-    await window.ethereum.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: GENLAYER.chainId }]
-    });
-
-    const message = `SpaceDodger Score:${score} Time:${gameTime}`;
-
-    const data = "0x" + Array.from(new TextEncoder().encode(message))
-      .map(b => b.toString(16).padStart(2, "0"))
-      .join("");
-
-    const txHash = await window.ethereum.request({
-      method: "eth_sendTransaction",
-      params: [{
-        from: walletAddress,
-        to: walletAddress,
-        value: "0x0",
-        data: data
-      }]
-    });
-
-    txStatus.innerHTML =
-      `Transaction sent ✅<br>
-      <a href="${GENLAYER.explorer}/tx/${txHash}" target="_blank">
-        View TX on GenLayer Explorer
-      </a>`;
-  } catch (err) {
-    console.error(err);
-    txStatus.textContent =
-      "Transaction failed or rejected. Make sure you have GEN testnet gas.";
-  }
-}
-
-window.addEventListener("keydown", e => {
-  keys[e.key] = true;
-});
-
-window.addEventListener("keyup", e => {
-  keys[e.key] = false;
-});
-
-connectBtn.onclick = connectWallet;
-startBtn.onclick = startGame;
-retryBtn.onclick = startGame;
+connectBtn.onclick  = connectWallet;
+startBtn.onclick    = startGame;
+retryBtn.onclick    = startGame;
 submitTxBtn.onclick = submitScoreTransaction;
-
 menuBtn.onclick = () => {
   gameOver.classList.add("hidden");
   menu.classList.remove("hidden");
